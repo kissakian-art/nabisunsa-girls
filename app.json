@@ -34,6 +34,13 @@
             "imageWidth": 76
           }
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#C9A84C",
+          "defaultChannel": "announcements"
+        }
       ]
     ],
     "experiments": {

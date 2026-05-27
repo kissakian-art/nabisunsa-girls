@@ -1,0 +1,167 @@
+S/No,Programme Name,Prog. Code,Cut-off Points
+1,Bachelor of Adult and Community Education - KyU(Day),ACD,16.1
+2,Bachelor of Adult and Community Education - KyU(Evening),ACE,17.2
+3,Bachelor of Art and Design with Education -Bushenyi (Day),ADB,21.4
+4,Bachelor of Art and Design with Education - KyU (Day),ADD,22.6
+5,Bachelor of Art and Design with Education - KyU (Evening),ADE,14.2
+6,Bachelor of Art and Design with Education - KyU (Evening),ADS,13.4
+7,Bachelor of Arts with Education - Bushenyi,AEB,13.1
+8,Bachelor of Arts with Education - KyU (Day),AED,30.8
+9,Bachelor of Arts with Education - KyU (Evening),ΑΕΕ,15
+10,Bachelor of Arts with Education - Soroti (Day),AES,14.5
+11,Bachelor of Science in Accounting and Finance - Bushenyi (Day),AFB,9.1
+12,Bachelor of Science in Accounting and Finance - KyU (Day),AFD,29.8
+13,Bachelor of Science in Accounting and Finance - KyU (Evening),AFE,22.4
+14,Bachelor of Science in Accounting and Finance - Soroti (Day),AFS,9.2
+15,Bachelor of Vocational Studies in Agriculture with Education- Bushenyi,AGB,10.1
+16,Bachelor of Vocational Studies in Agriculture with Education- KyU (Day),AGD,22.4
+17,Bachelor of Vocational Studies in Agriculture with Education- KyU (Day),AGE,16.8
+18,Bachelor of Vocational Studies in Agriculture with Education- Soroti,AGS,10.6
+19,Bachelor of Archeology and Heritage Studies - KyU (Day),AHD,18
+20,Bachelor of Archeology and Heritage Studies - KyU (Evening),AHE,16.4
+21,Bachelor of Art and Industrial Design - Bushenyi,AIB,16.4
+22,Bachelor of Art and Industrial Design - KyU (Day),AID,34.9
+23,Bachelor of Art and Industrial Design - Soroti,AIS,39.5
+24,Bachelor of Engineering in Automotive and Power Engineering - KyU (Day),APD,43.4
+25,Bachelor of Engineering in Automotive and Power Engineering - KyU (Evening),APE,40.2
+26,Bachelor of Architecture - KyU (Day),ARD,46.7
+27,Bachelor of Administrative and Secretarial Science - Bushenyi,ASB,
+28,Bachelor of Administrative and Secretarial Science - KyU (Day),ASD,17.4
+29,Bachelor of Administrative and Secretarial Science - KyU (Evening),ASE,
+30,Bachelor of Business Administration - Bushenyi (Day),BBB,10.6
+31,Bachelor of Banking and Microfinance KyU (Day),BBD,32.3
+32,Bachelor of Banking and Microfinance - KyU (Evening),BBE,23.4
+33,Bachelor of Business Administration - KyU (Day),BBK,27
+34,Bachelor of Business Administration - Soroti (Day),BBS,10.5
+35,Bachelor of Development Studies - KyU (Day),BDD,16.2
+36,Bachelor of Development Studies - KyU (Evening),BDE,16.5
+37,Bachelor of Economics and Statistics - KyU (Evening),BEE,15
+38,Bachelor of Economics and Statistics - KyU (Day),BEK,30.1
+39,Bachelor of Electrical Engineering - KyU (Day),BEL,47.4
+40,Bachelor of Electrical Engineering - KyU (Evening),BET,44.7
+41,Bachelor of Fine Art - KyU (Day),BFD,28.2
+42,Bachelor of Fine Art - KyU (Evening),BFE,16.3
+43,Bachelor of Guidance and Counselling - KyU (Day),BGD,16.3
+44,Bachelor of Guidance and Counselling - KyU (Evening),BGE,20
+45,Bachelor of Mechatronics and Biomedical Engineering - KyU (Evening),BIE,39.8
+46,Bachelor of Interior and Landscape Design - KyU (Day),BIL,34.5
+47,Bachelor of Mechatronics and Biomedical Engineering - KyU (Day),BIO,43.4
+48,Bachelor of Business Administration - KyU (Evening),BKE,19.3
+49,Bachelor of Science in Land Economics - KyU (Day),BLD,35.8
+50,Bachelor of Science in Land Economics - KyU (Evening),BLE,36
+51,Bachelor of Banking and Microfinance - Bushenyi (Day),BMB,13.9
+52,Bachelor of Environmental Science Technology and Management - KyU (Day),BMD,32.4
+53,Bachelor of Environmental Science Technology and Management - KyU (Evening),BME,25.6
+54,Bachelor of Banking and Microfinance - Soroti (Day),BMS,14.2
+55,Bachelor of Performing Arts - KyU (Day),BPD,16.5
+56,Bachelor of Performing Arts - KyU (Evening),BPE,
+57,Bachelor of Demography and Reproductive Health - KyU (Day),BRD,15.9
+58,Bachelor of Demography and Reproductive Health - KyU (Day),BRE,16.6
+59,Bachelor of Business Studies with Education - Bushenyi(Day),BSB,9
+60,Bachelor of Business Studies with Education - KyU (Day),BSD,18.1
+61,Bachelor of Business Studies with Education - KyU (Evening),BSE,7.9
+62,Bachelor of Business Studies with Education - Soroti (Day),BSS,10.3
+63,Bachelor of Social Work - KyU (Day),BSW,26.9
+64,Bachelor of Science Techonology - Biology - KyU (Day),BTD,18.6
+65,Bachelor of Science Techonology - Biology - KyU () Evening,BTE,14.4
+66,Bachelor of Community Based Rehabilitation - KyU (Day),CBD,17.8
+67,Bachelor of Community Based Rehabilitation - KyU (Evening),CBE,16.8
+68,Diploma in Community Based Rehabilitation - KyU (Day),CBR,12.1
+69,Bachelor of Computer Graphic Design - KyU (Evening),CGD,31.7
+70,Bachelor of Science in Chemical and Process Engineering - KyU (Day),CHD,39.9
+71,Bachelor of Science in Chemical and Process Engineering - KyU (Evening),CHE,35.5
+72,Bachelor of Community Development and Social Justice - KyU (Day),CSD,15.8
+73,Bachelor of Community Development and Social Justice - KyU (Evening),CSE,14.8
+74,Bachelor of Science Technology Chemistry - KyU (Day),CTD,15.3
+75,Diploma in Biomedical Engineering - KyU (Evening),DBE,23.3
+76,Diploma in Food Processing Technology - KyU (Day),DFP,17.6
+77,Diploma in Hotel and Institutional Catering - KyU (Evening),DHC,12.1
+78,Diploma in Interior Design - KyU (Evening),DID,18.9
+79,Diploma in Refrigeration and Air Conditioning - KyU (Day),DRA,19.1
+80,Diploma in Water Engineering - KyU (Day),DWE,23.8
+81,Bachelor of Science in Building Economics - KyU (Day),EBD,37.5
+82,Bachelor of Science in Building Economics - KyU (Evening),EBE,35.1
+83,Bachelor of Engineering Civil and Building Engineering - KyU (Day),ECD,48.9
+84,Bachelor of Engineering Civil and Building Engineering - KyU (Evening),ECE,46.9
+85,Bachelor of Engineering in Environmental Engineering and Management - KyU (Day),EED,40.3
+86,Bachelor of Engineering in Environmental Engineering and Management - KyU (Evening),EEE,35.8
+87,Bachelor of Ethics and Human Rights,EHD,16.7
+88,Bachelor of Ethics and Human Rights,EHE,19
+89,Bachelor of Arts in Economics - KyU (Day),EKD,20
+90,Bachelor of Arts in Economics - KyU (Evening),EKE,9.7
+91,Bachelor of Engineering in Mechanical and Manufacturing Engineering - KyU (Day),EMD,46
+92,Bachelor of Engineering in Mechanical and Manufacturing Engineering - KyU (Evening),EME,44.3
+93,Bachelor of Science with Education (Biological Sciences) - KyU (Day),ESB,35.4
+94,Bachelor of Science with Education (Economics) - KyU (Day),ESE,28.8
+95,Bachelor of Science with Education (Physical Sciences) - KyU (Day),ESP,34.1
+96,Bachelor of Engineering in Telecommunication Engineering - KyU (Day),ETD,43.5
+97,Bachelor of Engineering in Telecommunication Engineering - KyU (Evening),ETE,40
+98,Diploma in Fashion and Apparel Design - KyU (Evening),FAD,11.7
+99,Bachelor of Fashion and Cosmetology - KyU (Day),FCD,25.3
+100,Bachelor of Fashion and Cosmetology KyU (Evening),FCE,15.7
+101,Bachelor of Food Precessing Technology - KyU (Day),FPD,31.5
+102,Bachelor of Food Precessing Technology - KyU (Evening),FPE,24.9
+103,Bachelor of Geographical and Earth Observations (Day),GID,19.8
+104,Bachelor of Geographical and Earth Observations (Evening),GIE,14.3
+105,Bachelor of Science in Oil and Gas Production - KyU (Day),GPD,38.1
+106,Bachelor of Science in Oil and Gas Production - KyU (Evening),GPE,34.1
+107,Bachelor of Cultural Heritage Studies - KyU (Day),HCD,22.1
+108,Bachelor of Cultural Heritage Studies - KyU (Evening),HCE,17.1
+109,Bachelor of Hotel and Institutional Catering- KyU (Day),HID,14.6
+110,Bachelor of Hotel and Institutional Catering- KyU (Evening),HIE,15.3
+111,Bachelor of Science in Human Nutrition and Dietetics - KyU (Day),HND,31.3
+112,Bachelor of Science in Human Nutrition and Dietetics - KyU (Evening),HNE,18.2
+113,Bachelor of Arts in Humanities - KyU (Day),HSD,16.8
+114,Bachelor of Arts in Humanities - KyU (Evening),HSE,20.9
+115,Bachelor of Industrial Engineering and Management - KyU (Day),IED,41.5
+116,Bachelor of Industrial Engineering and Management - KyU (Evening),IEE,38
+117,Bachelor of Information Systems - KyU (Day),ISD,27.5
+118,Bachelor of Information Systems - KyU (Evening),ISE,27.7
+119,Bachelor of Information Technology and Computing - KyU (Day),ITD,33.7
+120,Bachelor of Information Technology and Computing - KyU (Evening),ITE,27.4
+121,Bachelor of Library and Information Science - KyU (Day),LID,20.8
+122,Bachelor of Library and Information Science - KyU (Evening),LIE,15.3
+123,Bachelor of Science in Sports and Leisure Management - KyU (Day),LMD,22.3
+124,Diploma in Mobility and Rehabilitation - KyU (Day),MBR,13
+125,Bachelor of Materials and Ceramic science - KyU (Day),MCD,27.6
+126,Bachelor of Management Science - KyU (Day),MSD,7
+127,Bachelor of Management Science - KyU (Evening),MSE,7.9
+128,Diploma in Music and Theatre Arts - Kyu (Evening),MTE,14
+129,Bachelor of Public Administration and Resource Governance - Bushenyi,PAB,14.6
+130,Bachelor of Public Administration and Resource Governance - KyU (Day),PAD,27.5
+131,Bachelor of Public Administration and Resource Governance - KyU (Evening),PAE,16.1
+132,Bachelor of Public Administration and Resource Governance - Soroti (Day),PAS,17.1
+133,Bachelor of Procurement and Logistics Management - Bushenyi (Day),PLB,9.2
+134,Bachelor of Procurement and Logistics Management - KyU (Day),PLD,25.7
+135,Bachelor of Procurement and Logistics Management - KyU (Evening),PLE,18.9
+136,Bachelor of Procurement and Logistics Management - Soroti (Day),PLS,11
+137,Bachelor of Pre-Primary Education (Day),PPD,17.2
+138,Bachelor of Pre-Primary Education (Evening),PPE,16.8
+139,Bachelor of Science Technology Physics - KyU (Day),PTD,21.3
+140,Bachelor of Science Technology Physics - KyU (Evening),PTE,19.5
+141,Bachelor of Science in Sport and Exercise Instruction - KyU (Day),SAD,15.7
+142,Bachelor of Science with Education (Biological Sciences) - Soroti (Day),SBB,20.5
+143,Bachelor of Science with Education (Biological Sciences) - Soroti (Day),SBS,18.7
+144,Bachelor of Art in Security and Diplomatic Studies - KyU (Day),SDD,15
+145,Bachelor of Art in Security and Diplomatic Studies - KyU (Evening),SDE,17.3
+146,Bachelor of Science with Education (Economics) - Bushenyi (Day),SEB,17
+147,Bachelor of Science in Sport and Exercise Instruction - KyU (Evening),SEE,15.4
+148,Bachelor of Science with Education (Economics) - Soroti (Day),SES,13.1
+149,Bachelor of Science in Surveying and Land Information Systems - KyU (Day),SLD,44.5
+150,Bachelor of Science in Surveying and Land Information Systems - KyU (Evening),SLE,41.7
+151,Diploma in Sign Language Interpreting - KyU (Day),SLI,12
+152,Bachelor of Science with Education (Physical Sciences) - Bushenyi (Day),SPB,15.1
+153,Bachelor of Science with Education (Physical Sciences) - Soroti (Day),SPS,17.6
+154,Bachelor of Arts in Social Sciences - Bushenyi (Day),SSB,28.3
+155,Bachelor of Arts in Social Sciences - KyU (Day),SSD,22.9
+156,Bachelor of Arts in Social Sciences - KyU (Evening),SSE,14.3
+157,Bachelor of Arts in Social Sciences - Soroti (Day),SSS,21.9
+158,Diploma in Science Technology - Biology - KyU (Day),STB,11.8
+159,Diploma in Science Technology - Chemistry - KyU (Day),STC,14
+160,Bachelor of Science in Statistics - KyU (Day),STD,29.4
+161,Diploma in Science Technology Physics - KyU (Day),STP,9.9
+162,Bachelor of Textile and Apparel Design - KyU (Day),TAD,20.5
+163,Bachelor of Science in Textile and Clothing Technology- KyU (Day),TCD,18.3
+164,Diploma in Textile Design and Surface Design - KyU (Evening),TEX,14.3
+165,Bachelor of Vocational Studies in Home Econmics with Education (Day),VHD,21.6
+166,Bachelor of Vocational Studies in Technological Studies with Education (Day),VTD,22.8

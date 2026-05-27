@@ -1,0 +1,22 @@
+PCM (Physics, Chemistry, Mathematics)
+PCB (Physics, Chemistry, Biology)
+BCM (Biology, Chemistry, Mathematics)
+PEM (Physics, Economics, Mathematics)
+BCA / PCA (Biology/Physics, Chemistry, Agriculture)
+BAG (Biology, Agriculture, Geography)
+MEG (Mathematics, Economics, Geography)
+HEG (History, Economics, Geography)
+HEL (History, Economics, Literature in English)
+HLD (History, Literature, Divinity/Christian Religious Education)
+DEG (Divinity, Economics, Geography)
+HEntG (History, Entrepreneurship, Geography)
+HGL (History, Geography, Literature)
+MEntE (Mathematics, Entrepreneurship, Economics)
+PAM (Physics, Fine Art, Mathematics)
+GEA (Geography, Economics, Agriculture)
+MEFA (Mathematics, Economics, Fine Art)
+
+
+The Rules for Subsidiary SubjectsEvery student takes General Paper (GP), but the second subsidiary is governed strictly by UNEB regulations based on the chosen principal subjects:  Subsidiary ICT: Mandatory for any student offering Principal Mathematics (e.g., PCM, PEM, MEG).  Subsidiary Mathematics (Sub-Math): Mandatory for any student offering Economics without Principal Mathematics (e.g., HEG, HEL) OR anyone doing a Science combination without Principal Mathematics (e.g., PCB, BCA, BAG).  Other combinations (like HLD) generally allow the student to choose freely between Sub-Math and Sub-ICT. 
+
+

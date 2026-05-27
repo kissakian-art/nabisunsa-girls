@@ -1,0 +1,182 @@
+MAKERERE UNIVERSITY
+ACADEMIC REGISTRAR'S DEPARTMENT
+PRIVATE STUDENTS' ADMISSIONS, 2025/2026
+DIRECT ENTRY CUT-OFF POINTS
+
+=======================================================================
+NO.  PROGRAMME                                                CODE    OTHER PROG'S    STEM PROG'S (ALL / M / F)
+=======================================================================
+
+1    Bachelor of Science in Accounting (Evening) MUBS         ACC     14.9
+2    Bachelor of Business Administration (Afternoon) Mak.     ADA     39.4
+3    Bachelor of Business Administration (Day) Jinja - Mak.   ADJ     14.2
+4    Bachelor of Business Administration (Day) Mak.           ADM     39.8
+5    Bachelor of Science in Agricultural Engineering (Day)    AGE                     43.3 / 36.4
+6    Bachelor of Agribusiness Management (Day)                AGM                     35.0 / 35.1
+7    Bachelor of Science in Agriculture (Day)                 AGR                     36.3 / 34.5
+8    Bachelor of Business Administration (Mbale) MUBS Eve     AML     18.3
+9    Bachelor of Applied Psychology (Day)                     APS     42.8
+10   Bachelor of Applied Psychology (Evening)                 APY     35.3
+11   Bachelor of Architecture (Day)                           ARC                     49.5 / 49.1
+12   Bachelor of Arts (Arts) - Day - Jinja Mak                ARJ
+13   Bachelor of Arts (Arts) - Day                            ARS     14.6
+14   Bachelor Arts (Social Sciences) (Evening)                ASE     16.0
+15   Bachelor of Arts (Social Sciences) (Day)                 ASS     16.5
+16   Bachelor of Adult and Community Education (Day)          BAC     23.9
+17   Bachelor of Agricultural Extension & Rural Innovation    BAI                     31.3 / 31.3
+18   Bachelor of Animal Production Tech & Mgt (Day)           BAP                     31.9 / 30.8
+19   Bachelor of Business Administration (Evening) MUBS       BBA     22.4
+20   Bachelor of Business Computing (Day)                     BBC     31.1
+21   Bachelor of Business Administration (Day) MUBS           BBD     26.4
+22   Bachelor of Business Computing (Evening) MUBS            BBE     28.8
+23   Bachelor of Science in Biomedical Engineering (Day)      BBI                     45.7 / 42.5
+24   Bachelor of Business Computing (Jinja) Day               BBJ     16.6
+25   Bachelor of Science in Bioprocessing Engineering         BBP                     39.1 / 36.1
+26   Bachelor of Science in Biotechnology (Day)               BBT                     35.8 / 33.2
+27   Bachelor of Science in Conservation Biology (Day)        BCB                     19.2 / 20.3
+28   Bachelor of Adult and Community Education (Evening)      BCE     17.4
+29   Bachelor of Dental Surgery (Day)                         BDS                     47.7 / 45.4
+30   Bachelor of Science in Dental Laboratory Technology      BDT                     38.5 / 38.2
+31   Bachelor of Arts in Economics (Day) MUBS                 BEC     13.6
+32   Bachelor of Environmental Health Science                 BEH                     35.8 / 34.2
+33   Bachelor of Entrepreneurship (Day) MUBS                  BEN     16.1
+34   Bachelor of Early Childhood Care and Education           BEY     17.1
+35   Bachelor of Fine Art                                     BFA     29.9
+36   Bachelor of Science in Fisheries and Aquaculture (Day)   BFS                     22.4 / 22.6
+37   Bachelor of Geographical Sciences (Day)                  BGS     32.8
+38   Bachelor of Science in Human Nutrition & Dietetics       BHD                     38.6 / 38.0
+39   Bachelor of Human Resource Mgt (Evening) MUBS            BHE     28.6
+40   BSc in Tourism and Hospitality Mgt (Day) - Jinja Mak     BHJ     14.4
+41   Bachelor of Human Resource Management (Day) MUBS         BHM     28.3
+42   Bachelor of Info Sys & Technology (Evening) Jinja-Mak    BIA     18.0
+43   Bachelor of International Business (Day) MUBS            BIB     23.9
+44   Bachelor of Science in Industrial Chemistry (Day)        BIC                     39.4 / 34.9
+45   Bachelor of Industrial Art & Applied Design (Day)        BID     38.3
+46   Bachelor of Office and Information Management (Day)      BIM     15.8
+47   Bachelor of Agricultural Extension & Rural Innovation    BIX                     28.1 / 25.5
+48   BSc in Tourism and Hospitality Mgt (Afternoon)-Jinja     BJA     19.1
+49   Bachelor of Business Computing (Jinja) Evening           BJB     18.1
+50   Bachelor of Journalism & Communication (Day)             BJC     44.5
+51   Bachelor of Journalism & Communication (Evening)         BJE     39.4
+52   Bachelor of Commerce (Jinja - MUBS) Evening              BJJ     7.9
+53   Bachelor of Commerce (Jinja - MUBS) Day                  BJO     11.6
+54   Bachelor of Science in Accounting Jinja - MUBS           BJS     15.4
+55   Bachelor of Marketing (Evening) - MUBS                   BKE     14.8
+56   Bachelor of Industrial Livestock and Business (Day)      BLB                     21.4 / 18.8
+57   Bachelor of Leisure, Events & Hotel Mgt (Day) Jinja-MUBS BLC     13.6
+58   Bachelor of Library and Information Science (Evening)    BLE     14.2
+59   Bachelor of Leadership and Governance (Day)              BLG     15.7
+60   Bachelor of Leisure, Events & Hotel Management (Day)     BLM     15.6
+61   Bachelor of Biomedical Laboratory Technology (Evening)   BLT                     41.9 / 39.2
+62   Bachelor of Science in Accounting (Mbarara) Day          BMA     13.8
+63   Bachelor of Business Administration (Mbale) MUBS         BML     14.3
+64   Bachelor of Business Administration (Day) Mbarara        BMM     17.8
+65   Bachelor of Science in Medical Radiography (Day)         BMR                     44.3 / 45.4
+66   Bachelor of Marketing (Day)                              BMS     15.4
+67   Bachelor of Entrepreneurship (Evening) MUBS              BNE     14.4
+68   Bachelor of Business Administration (Eve) Mbarara-MUBS   BNM     14.0
+69   Bachelor of Science in Forestry                          BOF                     30.2 / 29.1
+70   Bachelor of Office and Information Management (Evening)  BOM     14.3
+71   Bachelor of Science in Biomedical Sciences (Day)         BOS                     38.7 / 37.1
+72   BSc in Petroleum Geoscience and Production (Day)         BPG                     43.5 / 39.9
+73   Bachelor of Leisure, Events and Hotel Mgt (Eve) MUBS     BPL     16.7
+74   Bachelor of Population Studies (Day)                     BPS     15.0
+75   Bachelor of Optometry (Day)                              BPT                     47.4 / 44.4
+76   Bachelor of Science in Quantitative Economic (Day)       BQE                     29.2 / 29.6
+77   Bachelor of Business Administration (Day) Jinja - MUBS   BRJ     13.5
+78   Bachelor of Real Estate Business Management (Day)        BRM     15.7
+79   Bachelor of Business Administration (Eve) Jinja - MUBS   BRO     12.7
+80   Bachelor of Science in Accounting (Day) MUBS             BSA     23.2
+81   Bachelor of Science in Finance (Day) MUBS                BSF     14.5
+82   Bachelor of Information Systems & Technology (Eve) Mak   BSI     32.3
+83   Bachelor of Info Systems and Technology (Day) Jinja-Mak  BSJ     19.8
+84   Bachelor of Sci of Speech & Language Therapy (Day)       BSL                     40.3 / 37.1
+85   Bachelor of Business Statistics (Evening) MUBS           BST     8.2
+86   Bachelor of Business Administration (Eve) Arua - MUBS    BSU     15.5
+87   Bachelor of Science in Software Engineering (Day)        BSW                     44.7 / 40.2
+88   Bachelor of International Business (Evening)             BTB     17.0
+89   Bachelor of Science in Tourism and Hospitality Mgt (Day) BTH     31.8
+90   Bachelor of Travel & Tourism Management (Day) MUBS       BTT     16.9
+91   Bachelor of Urban & Regional Planning (Day)              BUP     36.2
+92   Bachelor of Business Statistics (Day) MUBS               BUS     10.2
+93   Bachelor of Visual Communication, Design & Multi-Media   BVC     33.2
+94   Bachelor of Science in Valuation                         BVL                     38.4 / 37.8
+95   Bachelor of Environmental Science (Day)                  BEV                     32.6 / 32.5
+96   BSc in Water and Irrigation Engineering                  BWE                     42.8 / 37.3
+97   Bachelor of Cytotechnology (Day)                         BYT                     39.8 / 37.9
+98   Bachelor of Youth Development Work (External)            BYW     14.6
+99   BSc in Computer and Communications Engineering (Day)     CCE                     34.6 / 23.5
+100  Bachelor of Commerce (Afternoon)                         CEA     32.6
+101  Bachelor of Science in Civil Engineering (Day)           CIV                     49.7 / 45.9
+102  Bachelor of Commerce (Day) Mbarara - MUBS                CMM     11.3
+103  Bachelor of Commerce (Evening) MUBS                      COB     9.0
+104  Bachelor of Commerce (Day) Makerere                      COE     37.3
+105  Bachelor of Commerce (Day) Jinja - Mak.                  COJ
+106  Bachelor of Commerce (Day) MUBS                          COM     19.6
+107  Bachelor of Procurement & Supply Chain Mgt (Day) Jinja   CRJ     16.9
+108  Bachelor of Procurement & Supply Chain Mgt (Eve) Jinja   CRO     13.7
+109  Bachelor of Science in Computer Science (Day) Mak        CSC                     43.1 / 38.0
+110  BSc in Computer Science (Evening) Mak                    CSE                     41.1 / 36.1
+111  BSc in Computer Science (Day) Jinja - Mak.               CSJ                     29.7 / 23.0
+112  Bachelor of Commerce (External) - Jinja - Mak            CXJ
+113  Diploma in Performing Arts (Day)                         DPA     16.3
+114  Bachelor of Arts in Economics (Afternoon) Mak            ECE     21.7
+115  Bachelor of Arts in Economics (Jinja - Mak) Day          ECJ
+116  Bachelor of Arts in Economics (Evening) MUBS             ECN     8.9
+117  Bachelor of Arts in Economics (Day) Mak                  ECO     28.4
+118  Bachelor of Arts with Education (Day)                    EDA     34.3
+119  Bachelor of Science with Education (Biological) Day      EDB                     41.5 / 38.0
+120  Bachelor of Science with Education (Physical) Day        EDP                     42.8 / 37.7
+121  Bachelor of Science with Education (Economics) Day       EEC                     30.9 / 30.2
+122  Bachelor of Science in Electrical Engineering (Day)      ELE                     48.9 / 43.8
+123  BSc in Food Science and Technology (Day)                 FST                     36.6 / 36.9
+124  Bachelor of Human Resource Mgt (Evening) Mbale-MUBS      HMA     18.0
+125  Bachelor of Human Resource Mgt (Day) Mbale               HML     19.7
+126  Bachelor of Human Resource Mgt (Day) Mbarara - MUBS      HNM     18.5
+127  Bachelor of Human Resource Mgt (Eve) Mbarara - MUBS      HOM     20.7
+128  Bachelor of Human Resource Mgt (Day) Jinja - MUBS        HSJ     18.9
+129  Bachelor of Human Resource Mgt (Jinja) Evening           HSO     14.8
+130  Bachelor of Information Sys and Technology               IST     36.9
+131  Bachelor of Business Administration (Afternoon) Jinja-Mak JAA    19.0
+132  Bachelor of Entrepreneurship (Jinja) Day                 JBE     17.3
+133  Bachelor of Entrepreneurship (Evening) Jinja             JBI
+134  BSc in Computer Science (Afternoon) Jinja - Mak          JCA                     16.7 / 19.7
+135  Bachelor of Arts in Economics (Jinja - Mak) Afternoon    JEA
+136  Bachelor of Commerce (Afternoon) Jinja - Mak             JOA     12.0
+137  Bachelor of Arts (Arts) - Afternoon - Jinja Mak          JRA
+138  Bachelor of Leadership and Governance (Evening)          LGM     14.2
+139  Bachelor of Library and Information Science (Day)        LIS     27.2
+140  BSc in Land Surveying & Geomatics (Day)                  LSG                     47.0 / 43.7
+141  Bachelor of Medicine & Bachelor of Surgery (Day)         MAM                     49.7 / 46.3
+142  Bachelor of Science in Mechanical Engineering (Day)      MEC                     47.9 / 43.0
+143  Bachelor of Biomedical Laboratory Technology (Day)       MLT                     41.9 / 40.4
+145  Bachelor of Arts in Music (Day)                          MUS     14.7
+146  Bachelor of Nursing Science (Day)                        NUR                     44.7 / 43.3
+147  Bachelor of Pharmacy (Day)                               PHA                     48.9 / 46.1
+148  Bachelor of Procurement & Supply Chain Mgt (Eve) Mbale   PMA     18.9
+149  Bachelor of Procurement & Supply Chain Mgt (Day) Mbale   PML     49.6
+150  Bachelor of Procurement & Supply Chain Mgt (Day) Mbarara PMM     15.2
+151  Bachelor of Procurement & Supply Chain Mgt (Day) Mbarara PNM     14.9
+152  Bachelor of Procurement and Supply Chain Mgt (Eve) MUBS  PSC     19.3
+153  Bachelor of Procurement and Supply Chain Mgt (Day) MUBS  PSM     26.9
+154  Bachelor of Procurement & Supply Chain Mgt (Eve) Arua    PSU     16.5
+155  Bachelor of Science in Actuarial Science (Day)           SAS                     25.3 / 25.3
+156  Bachelor of Science (Biological) Day                     SCB                     26.5 / 26.8
+157  Bachelor of Science (Physical) Day                       SCP                     17.9 / 17.7
+158  Bachelor of Science (External)                           SCX                     20.2 / 22.1
+159  Bachelor of Science (Economics) Day                      SEC                     15.9 / 17.3
+160  Bachelor of Sports Science (Exercise Science)            SPS                     21.2 / 21.3
+161  Bachelor of Science in Quantity Surveying (Day)          SQS                     44.8 / 42.1
+162  BSc in Software Engineering (Evening)                    SSE                     43.6 / 39.8
+163  Bachelor of Sports Science (Sports Management)           SSM     17.8
+164  Bachelor of Statistics (Day)                             STA                     29.7 / 29.7
+165  Bachelor of Transport & Logistic Mgt (Eve) MUBS          TLM     15.6
+166  Bachelor of Travel & Tourism Mgt (Evening)               TTM     17.3
+167  Bachelor of Veterinary Medicine (Day)                    VET                     43.6 / 40.2
+168  Bachelor of Laws                                         LAA     55%
+169  Bachelor of Laws                                         LAW     57%
+
+=======================================================================
+NOTE: STEM PROG'S cut-off points are shown as ALL / M (Male) / F (Female)
+      where applicable. Blank entries indicate no cut-off point listed.
+=======================================================================
