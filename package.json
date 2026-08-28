@@ -31,7 +31,8 @@
     "react-native-web": "^0.21.2",
     "react-native-webview": "13.15.0",
     "react-native-worklets": "^0.8.3",
-    "react-native-worklets-core": "^1.6.3"
+    "react-native-worklets-core": "^1.6.3",
+    "mysql2": "^3.11.0"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
@@ -47,7 +48,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "test:server": "jest --config jest.server.config.js"
   },
   "private": true
 }
