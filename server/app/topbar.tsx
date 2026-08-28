@@ -1,5 +1,6 @@
+import Link from 'next/link';
 import { signOut } from './actions';
-import type { Session } from '../lib/auth';
+import { canRelease, type Session } from '../lib/auth';
 
 const ROLE_LABEL: Record<string, string> = {
   dos: 'Director of Studies',
@@ -16,9 +17,13 @@ export function TopBar({ session, schoolName }: { session: Session; schoolName: 
           {session.name} · {ROLE_LABEL[session.role] ?? session.role}
         </div>
       </div>
-      <form action={signOut}>
-        <button className="btn secondary" type="submit">Sign out</button>
-      </form>
+      <div className="actions">
+        {/* Setup is administration, so office staff do not see it. */}
+        {canRelease(session.role) && <Link href="/setup">Setup</Link>}
+        <form action={signOut}>
+          <button className="btn secondary" type="submit">Sign out</button>
+        </form>
+      </div>
     </div>
   );
 }

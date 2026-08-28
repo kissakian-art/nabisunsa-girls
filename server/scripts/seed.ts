@@ -11,6 +11,8 @@ import mysql from 'mysql2/promise';
 import bcrypt from 'bcryptjs';
 import { TenantDb, closePool } from '../db/tenant';
 import { recomputeTermResults } from '../lib/results';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { deleteSchoolBySlug } = require('./lib/teardown');
 
 const SLUG = 'nabisunsa-girls';
 
@@ -40,37 +42,6 @@ const FIRST = ['Aisha', 'Brenda', 'Cynthia', 'Doreen', 'Esther', 'Faith', 'Grace
 const LAST = ['Nakato', 'Auma', 'Namuli', 'Achieng', 'Nabirye', 'Akello', 'Nanyonga',
   'Atim', 'Nakimuli', 'Adongo'];
 
-/**
- * Removes a tenant and everything belonging to it, in dependency order.
- *
- * A plain `DELETE FROM schools` does NOT work: marksheets.stream_id is
- * RESTRICT (MySQL forbids CASCADE or SET NULL on a column that a stored
- * generated column depends on), so the cascade from schools -> streams is
- * blocked while marksheets exist. Tenant teardown is therefore an explicit,
- * ordered operation — which is the right shape anyway, since a real
- * termination exports the data first.
- */
-async function deleteSchool(
-  q: (sql: string, params?: unknown[]) => Promise<mysql.ResultSetHeader>,
-  schoolId: number,
-): Promise<void> {
-  // Children first, then their parents.
-  await q('DELETE FROM marks WHERE school_id = ?', [schoolId]);
-  await q('DELETE FROM term_results WHERE school_id = ?', [schoolId]);
-  await q('DELETE FROM marksheets WHERE school_id = ?', [schoolId]);
-  await q('DELETE FROM student_uce_grades WHERE student_id IN (SELECT id FROM students WHERE school_id = ?)', [schoolId]);
-  await q('DELETE FROM student_subjects WHERE student_id IN (SELECT id FROM students WHERE school_id = ?)', [schoolId]);
-  await q('DELETE FROM students WHERE school_id = ?', [schoolId]);
-  await q('DELETE FROM teacher_allocations WHERE school_id = ?', [schoolId]);
-  await q('DELETE FROM combination_requirements WHERE combination_id IN (SELECT id FROM combinations WHERE school_id = ?)', [schoolId]);
-  await q('DELETE FROM combination_subjects WHERE combination_id IN (SELECT id FROM combinations WHERE school_id = ?)', [schoolId]);
-  await q('DELETE FROM combinations WHERE school_id = ?', [schoolId]);
-  await q('DELETE FROM streams WHERE school_id = ?', [schoolId]);
-  // schools.current_term_id points at terms, so clear it before terms go.
-  await q('UPDATE schools SET current_term_id = NULL WHERE id = ?', [schoolId]);
-  await q('DELETE FROM schools WHERE id = ?', [schoolId]);
-}
-
 async function main() {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error('DATABASE_URL is not set');
@@ -82,11 +53,7 @@ async function main() {
   };
 
   // Rebuild only the demo tenant.
-  const [existing] = await db.query<mysql.RowDataPacket[]>(
-    'SELECT id FROM schools WHERE slug = ?', [SLUG],
-  );
-  if (existing[0]) {
-    await deleteSchool(q, existing[0].id as number);
+  if (await deleteSchoolBySlug(db, SLUG)) {
     console.log('removed previous demo school');
   }
 

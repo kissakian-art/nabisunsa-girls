@@ -83,12 +83,43 @@ TEST_DATABASE_URL='mysql://root@127.0.0.1:3306/midway_test' npx jest server/db
 They create two schools and try to read, update and delete across the
 boundary — the checks that cannot be made by reading code.
 
+## Onboarding a school
+
+`/setup` is the checklist a school works through: classes and streams,
+subjects, class lists, then marksheets. `node scripts/setup-smoke.js` proves
+it end to end — it creates a school with nothing but a login and drives the
+browser until marksheets are ready to fill in, without a line of SQL.
+
+Two decisions worth knowing:
+
+**Students are pasted, not typed.** Nobody enters nine hundred names one at a
+time, so the import takes comma or tab separated rows straight from a
+spreadsheet. A bad row is reported with its line number and the rest still
+import — losing 200 good rows to one typo would be worse than useless. A
+registration number already on the roll is skipped, so re-pasting an updated
+list adds only the new students.
+
+**Marksheets are generated, not created.** A school with six classes, three
+streams, twelve subjects and four assessments needs 864 of them. Generation
+skips classes with no students, and leaves existing sheets untouched, so
+running it again after adding a subject only fills the gaps.
+
+Setup is administration: only the DoS and school administrators see it. Office
+staff enter marks, they do not configure the school.
+
 ## Applying the schema
 
 ```bash
 docker exec -i mysql mysql -uroot -p -e 'CREATE DATABASE midway_school'
 docker exec -i mysql mysql -uroot -p midway_school < server/db/migrations/001_init.sql
+docker exec -i mysql mysql -uroot -p midway_school < server/db/migrations/002_subject_catalog.sql
 ```
+
+`002` loads the national subject catalogue — shared reference data every
+school is seeded from, maintained once centrally.
+
+Removing a tenant is an ordered operation, not `DELETE FROM schools`: see
+`scripts/lib/teardown.js` for why, and use `deleteSchoolBySlug`.
 
 Use a `_dev` database name until the portal is deployed; nothing the live
 apps touch should be involved.
