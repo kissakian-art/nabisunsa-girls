@@ -141,3 +141,52 @@ input:focus, select:focus { outline: 2px solid var(--navy-light); outline-offset
   gap: 12px;
   align-items: center;
 }
+
+/* Report cards ---------------------------------------------------------- */
+.report {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 28px 32px;
+  margin-bottom: 24px;
+}
+.report-head { text-align: center; border-bottom: 2px solid var(--navy); padding-bottom: 14px; }
+.report-head .school { font-size: 22px; font-weight: 700; color: var(--navy); }
+.report-head .motto  { font-size: 13px; color: var(--muted); font-style: italic; }
+.report-head .title  { font-size: 15px; font-weight: 600; margin-top: 8px; letter-spacing: 0.06em; text-transform: uppercase; }
+
+.report-meta { display: flex; flex-wrap: wrap; gap: 8px 32px; margin: 16px 0 20px; }
+.report-meta div { font-size: 15px; }
+.report-meta .k { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.report table { margin-bottom: 16px; }
+.report th, .report td { padding: 7px 10px; }
+.report td.num, .report th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+.report-summary { display: flex; flex-wrap: wrap; gap: 24px; border-top: 2px solid var(--navy); padding-top: 14px; }
+.report-summary .s { min-width: 110px; }
+.report-summary .v { font-size: 22px; font-weight: 700; color: var(--navy); }
+.report-summary .l { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+.report-sign { display: flex; gap: 48px; margin-top: 34px; }
+.report-sign div { flex: 1; border-top: 1px solid var(--text); padding-top: 6px; font-size: 13px; color: var(--muted); }
+
+.report-empty { padding: 20px 0; color: var(--muted); font-style: italic; }
+
+@media print {
+  /* The page furniture is for the office, not for the parent holding this. */
+  .topbar, .no-print { display: none !important; }
+  body { background: #fff; }
+  .wrap { max-width: none; padding: 0; }
+  .report {
+    border: none;
+    border-radius: 0;
+    padding: 0 0 12px;
+    margin: 0;
+    /* One card per sheet of paper. */
+    page-break-after: always;
+    break-after: page;
+  }
+  .report:last-child { page-break-after: auto; break-after: auto; }
+  table { page-break-inside: avoid; }
+}

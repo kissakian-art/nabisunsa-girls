@@ -144,6 +144,9 @@ export async function recomputeTermResults(
   }
 
   let written = 0;
+  // Everything this run legitimately produced. Anything in scope that is not
+  // in here is stale and must go — see the cleanup below.
+  const kept = new Set<string>();
 
   for (const [subject, students] of bySubject) {
     // Rank within a class and stream, not across the whole school: a
@@ -201,8 +204,30 @@ export async function recomputeTermResults(
             ...values,
           });
         }
+        kept.add(`${result.studentId}:${subject}`);
         written += 1;
       }
+    }
+  }
+
+  // Remove results that no longer have released marks behind them.
+  //
+  // The loop above only visits subjects that still have published marks, so
+  // withdrawing a subject's LAST released marksheet would otherwise leave its
+  // rows untouched and a parent would go on seeing a withdrawn subject. This
+  // is the case the per-student "no final score" branch cannot reach, because
+  // the subject never enters the loop at all.
+  const scoped = await db.raw<RowDataPacket & { id: number; studentId: number; subjectId: number }>(
+    `SELECT id, student_id AS studentId, subject_id AS subjectId
+       FROM term_results
+      WHERE school_id = :schoolId
+        AND term_id = ?
+        ${subjectId ? 'AND subject_id = ?' : ''}`,
+    subjectId ? [termId, subjectId] : [termId],
+  );
+  for (const row of scoped) {
+    if (!kept.has(`${row.studentId}:${row.subjectId}`)) {
+      await db.delete('term_results', { id: row.id });
     }
   }
 

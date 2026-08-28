@@ -18,7 +18,9 @@ export function TopBar({ session, schoolName }: { session: Session; schoolName: 
         </div>
       </div>
       <div className="actions">
-        {/* Setup is administration, so office staff do not see it. */}
+        {/* Report cards are the school's own output, so the whole office
+            can print them. Setup is administration and is not theirs. */}
+        <Link href="/reports">Report cards</Link>
         {canRelease(session.role) && <Link href="/setup">Setup</Link>}
         <form action={signOut}>
           <button className="btn secondary" type="submit">Sign out</button>

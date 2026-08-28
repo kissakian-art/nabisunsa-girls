@@ -124,6 +124,27 @@ Removing a tenant is an ordered operation, not `DELETE FROM schools`: see
 Use a `_dev` database name until the portal is deployed; nothing the live
 apps touch should be involved.
 
+## Report cards
+
+`/reports` picks a class and term; `/reports/[studentId]` is one card and
+`/reports/print` is every card for a class, one per printed page. Screen
+furniture is hidden under `@media print`, so the first sheet is not wasted on
+a navigation bar.
+
+Cards read only from `term_results`, so a card can never show a mark the
+school has not released. **Every student on the roll gets a card**, including
+those with nothing published — it says so plainly, because a card missing
+from a stack of forty is worse than an honest empty one: nobody can tell
+whether it was lost.
+
+Overall position is computed at read time rather than stored: it depends on
+which subjects a student sat, and would go stale the moment another subject
+is released. Ties share a position, and a student with nothing released has
+no position rather than coming last.
+
+`node scripts/report-smoke.js` checks all of that in a browser and renders
+the print view to PDF to confirm it paginates one card per page.
+
 ## Mobile API
 
 The family app authenticates with a bearer token — the same signed payload
