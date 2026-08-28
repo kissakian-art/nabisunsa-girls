@@ -15,10 +15,13 @@ import {
   MarksheetStatus,
   ActorRole,
 } from '../domain/marksheet';
+import { recomputeTermResults } from './results';
 
 export interface MarksheetSummary {
   id: number;
   status: MarksheetStatus;
+  termId: number;
+  subjectId: number;
   className: string;
   streamName: string | null;
   subjectName: string;
@@ -37,6 +40,8 @@ interface SummaryRow extends RowDataPacket, MarksheetSummary {}
 const SUMMARY_SQL = `
   SELECT ms.id,
          ms.status,
+         ms.term_id    AS termId,
+         ms.subject_id AS subjectId,
          c.name  AS className,
          st.name AS streamName,
          sub.name AS subjectName,
@@ -266,7 +271,36 @@ export async function transition(
     detail: JSON.stringify({ from: sheet.status, to: decision.nextStatus }),
   });
 
+  // Releasing or withdrawing changes what a parent may see, so the computed
+  // results have to follow. Recomputing on withdrawal matters as much as on
+  // release: pulling a paper back must also pull back the final mark it fed.
+  if (action === 'publish' || action === 'unpublish') {
+    const termId = await termIdFor(db, marksheetId);
+    if (termId) {
+      try {
+        await recomputeTermResults(db, termId, sheet.subjectId);
+      } catch (error) {
+        // The marksheet has already moved; failing the whole action here
+        // would leave the office unable to release. Surface it instead.
+        return {
+          ok: false,
+          reason:
+            'The marksheet was released, but results could not be recalculated: ' +
+            (error instanceof Error ? error.message : String(error)),
+        };
+      }
+    }
+  }
+
   return { ok: true };
+}
+
+async function termIdFor(db: TenantDb, marksheetId: number): Promise<number | null> {
+  const sheet = await db.selectOne<RowDataPacket & { term_id: number }>('marksheets', {
+    where: { id: marksheetId },
+    columns: ['term_id'],
+  });
+  return sheet ? Number(sheet.term_id) : null;
 }
 
 export interface Term extends RowDataPacket {

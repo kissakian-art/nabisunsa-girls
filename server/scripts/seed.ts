@@ -9,6 +9,8 @@
 
 import mysql from 'mysql2/promise';
 import bcrypt from 'bcryptjs';
+import { TenantDb, closePool } from '../db/tenant';
+import { recomputeTermResults } from '../lib/results';
 
 const SLUG = 'nabisunsa-girls';
 
@@ -129,15 +131,16 @@ async function main() {
   }
 
   const assessments: Record<string, number> = {};
-  for (const [code, name, category, order] of [
-    ['BOT', 'Beginning of Term', 'exam', 0],
-    ['CA1', 'Coursework 1', 'coursework', 1],
-    ['CA2', 'Coursework 2', 'coursework', 2],
-    ['EOT', 'End of Term', 'exam', 3],
+  for (const [code, name, category, isFinal, order] of [
+    ['BOT', 'Beginning of Term', 'exam', 0, 0],
+    ['CA1', 'Coursework 1', 'coursework', 0, 1],
+    ['CA2', 'Coursework 2', 'coursework', 0, 2],
+    // Only this one carries the 80%.
+    ['EOT', 'End of Term', 'exam', 1, 3],
   ] as const) {
     assessments[code] = (await q(
-      'INSERT INTO assessments (school_id, code, name, category, sort_order) VALUES (?,?,?,?,?)',
-      [school, code, name, category, order],
+      'INSERT INTO assessments (school_id, code, name, category, is_final, sort_order) VALUES (?,?,?,?,?,?)',
+      [school, code, name, category, isFinal, order],
     )).insertId;
   }
 
@@ -208,7 +211,14 @@ async function main() {
     }
   }
 
+  // The seed inserts published marksheets directly rather than through the
+  // workflow, so the results they feed have to be computed explicitly —
+  // otherwise the demo shows released marks with no report card behind them.
+  const results = await recomputeTermResults(new TenantDb(school), term);
+  console.log(`computed ${results} term results`);
+
   await db.end();
+  await closePool();
 
   console.log(`
 Seeded "${SLUG}" (school id ${school}).

@@ -304,10 +304,16 @@ CREATE TABLE assessments (
   code         VARCHAR(16)     NOT NULL,  -- 'BOT','MID','EOT','CA1','CA2'
   name         VARCHAR(80)     NOT NULL,
   category     ENUM('coursework','exam') NOT NULL,
+  -- Which single exam carries the end-of-term weight. 'exam' alone is not
+  -- enough: Beginning-of-Term and Mid-Term are also exams, but they are
+  -- reported to parents for information and must never feed the final mark.
+  -- Exactly one assessment per school should have this set.
+  is_final     TINYINT(1)      NOT NULL DEFAULT 0,
   max_score    DECIMAL(5,2)    NOT NULL DEFAULT 100.00,
   sort_order   TINYINT UNSIGNED NOT NULL DEFAULT 0,
   PRIMARY KEY (id),
   UNIQUE KEY uq_assessment (school_id, code),
+  KEY ix_assessment_final (school_id, is_final),
   CONSTRAINT fk_assess_school FOREIGN KEY (school_id) REFERENCES schools(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

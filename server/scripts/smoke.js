@@ -167,6 +167,31 @@ async function openSheet(page, subject) {
   );
   await page.screenshot({ path: `${SHOTS}/06-four-eyes.png`, fullPage: true });
 
+  console.log('\n--- releasing computes the report card ---');
+  {
+    // Publishing Mathematics above must have produced term results. This is
+    // the link between what the office types and what a parent eventually
+    // sees, so verify it in the database rather than trusting the UI.
+    const mysql = require('mysql2/promise');
+    const conn = await mysql.createConnection({
+      uri: process.env.DATABASE_URL || 'mysql://root@127.0.0.1:3306/midway_school',
+    });
+    const [computed] = await conn.query(
+      `SELECT COUNT(*) AS n FROM term_results tr
+         JOIN subjects s ON s.id = tr.subject_id WHERE s.code = 'MTC'`,
+    );
+    check('releasing Mathematics computed its results', Number(computed[0].n) > 0,
+      `${computed[0].n} rows`);
+
+    const [unreleased] = await conn.query(
+      `SELECT COUNT(*) AS n FROM term_results tr
+         JOIN subjects s ON s.id = tr.subject_id WHERE s.code IN ('ENG','GEO')`,
+    );
+    check('unreleased subjects have no results at all', Number(unreleased[0].n) === 0,
+      `${unreleased[0].n} rows`);
+    await conn.end();
+  }
+
   console.log('\n--- tenant isolation through the UI ---');
   const res = await page.goto(`${BASE}/marksheets/99999`, { waitUntil: 'networkidle' });
   check("another school's marksheet is not found", res.status() === 404, `HTTP ${res.status()}`);

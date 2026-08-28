@@ -10,10 +10,9 @@
  * They skip when it is unset, so the suite stays green without a database.
  */
 
-import fs from 'fs';
-import path from 'path';
 import mysql from 'mysql2/promise';
 import { TenantDb, PlatformDb, TenantScopeError, closePool } from '../tenant';
+import { createTestDatabase } from '../../test-support/database';
 
 const DB_URL = process.env.TEST_DATABASE_URL;
 const describeDb = DB_URL ? describe : describe.skip;
@@ -26,43 +25,16 @@ describeDb('tenant isolation', () => {
   let seetaId: number;
 
   beforeAll(async () => {
-    // Create the database first, on a connection that does not name it —
-    // otherwise the pool fails to connect to a schema that does not exist yet.
-    const parsed = new URL(DB_URL as string);
-    const dbName = parsed.pathname.replace('/', '');
-    const admin = await mysql.createConnection({
-      host: parsed.hostname,
-      port: Number(parsed.port || 3306),
-      user: decodeURIComponent(parsed.username),
-      password: decodeURIComponent(parsed.password),
-      multipleStatements: false,
-    });
-    await admin.query(`DROP DATABASE IF EXISTS \`${dbName}\``);
-    await admin.query(`CREATE DATABASE \`${dbName}\``);
-    await admin.end();
+    // Own database: suites run in parallel workers and would otherwise drop
+    // and recreate each other's schema mid-run.
+    const test = await createTestDatabase(DB_URL as string, 'tenant', 'nabisunsa');
+    pool = test.pool;
+    nabisunsaId = test.schoolId;
 
-    pool = mysql.createPool({ uri: DB_URL, connectionLimit: 4, decimalNumbers: true });
-
-    // Rebuild the schema from the migration that ships to production, so
-    // these tests exercise the real DDL rather than a hand-written copy.
-    const sql = fs.readFileSync(
-      path.join(__dirname, '..', 'migrations', '001_init.sql'),
-      'utf8',
-    );
-    const conn = await pool.getConnection();
-    for (const statement of sql.split(/;\s*$/m).map((s) => s.trim()).filter(Boolean)) {
-      await conn.query(statement);
-    }
-
-    const [a] = await conn.query<mysql.ResultSetHeader>(
-      "INSERT INTO schools (slug, name, status) VALUES ('nabisunsa','Nabisunsa Girls','active')",
-    );
-    const [b] = await conn.query<mysql.ResultSetHeader>(
+    const [b] = await pool.query<mysql.ResultSetHeader>(
       "INSERT INTO schools (slug, name, status) VALUES ('seeta','Seeta High','active')",
     );
-    nabisunsaId = a.insertId;
     seetaId = b.insertId;
-    conn.release();
 
     nabisunsa = new TenantDb(nabisunsaId, pool);
     seeta = new TenantDb(seetaId, pool);
