@@ -91,6 +91,9 @@ export const TENANT_TABLES = [
   'announcements',
   'push_devices',
   'notifications',
+  // school_id is nullable here for platform-level entries, but a school's
+  // own audit trail is written and read tenant-scoped.
+  'audit_log',
 ] as const;
 
 export type TenantTable = (typeof TENANT_TABLES)[number];

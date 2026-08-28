@@ -1,0 +1,143 @@
+/*
+ * Deliberately plain. This screen is used by office staff typing from paper
+ * for long stretches, often on an old desktop — legibility and big hit
+ * targets matter far more than styling.
+ */
+
+:root {
+  --navy: #1f3864;
+  --navy-light: #2f5597;
+  --gold: #8a6d1f;
+  --bg: #f4f6fa;
+  --surface: #ffffff;
+  --border: #d4dae6;
+  --text: #17202e;
+  --muted: #5a6577;
+  --danger: #a4262c;
+  --ok: #1c6b3c;
+  --warn: #8a5a00;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+a { color: var(--navy-light); }
+
+.topbar {
+  background: var(--navy);
+  color: #fff;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.topbar .school { font-weight: 700; font-size: 18px; }
+.topbar .who { font-size: 14px; opacity: 0.9; }
+.topbar a { color: #fff; }
+
+.wrap { max-width: 1100px; margin: 0 auto; padding: 20px; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+h1 { font-size: 24px; margin: 0 0 4px; color: var(--navy); }
+h2 { font-size: 18px; margin: 0 0 12px; color: var(--navy); }
+.sub { color: var(--muted); margin: 0 0 20px; }
+
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+th { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+tbody tr:hover { background: #fafbfd; }
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.badge.draft     { background: #eceff4; color: #4a5568; }
+.badge.entered   { background: #fff3d6; color: var(--warn); }
+.badge.verified  { background: #dbe7ff; color: var(--navy); }
+.badge.published { background: #daf1e3; color: var(--ok); }
+
+.btn {
+  display: inline-block;
+  padding: 10px 18px;
+  border-radius: 6px;
+  border: 1px solid var(--navy);
+  background: var(--navy);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+}
+.btn:hover { background: var(--navy-light); }
+.btn.secondary { background: #fff; color: var(--navy); }
+.btn.danger { background: #fff; color: var(--danger); border-color: var(--danger); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+.notice { padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; font-size: 15px; }
+.notice.error { background: #fdecee; border: 1px solid #f3c2c6; color: var(--danger); }
+.notice.ok    { background: #e6f4ec; border: 1px solid #b6ddc6; color: var(--ok); }
+.notice.info  { background: #eef2fa; border: 1px solid #ccd8ee; color: var(--navy); }
+
+label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; }
+input[type="text"], input[type="email"], input[type="password"], input[type="number"], select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 16px;
+  background: #fff;
+}
+input:focus, select:focus { outline: 2px solid var(--navy-light); outline-offset: -1px; }
+
+.field { margin-bottom: 16px; }
+
+/* Marks entry grid ------------------------------------------------------ */
+.marks-table td { padding: 6px 12px; }
+.marks-table input[type="number"] { width: 90px; text-align: center; font-size: 17px; }
+.marks-table input.absent-on { background: #f1f3f7; color: var(--muted); }
+.absent-cell { white-space: nowrap; }
+.absent-cell label { display: inline; font-weight: 400; font-size: 14px; margin-left: 6px; }
+.reg { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+
+.progress {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.progress .stat { flex: 1 1 120px; }
+.progress .n { font-size: 28px; font-weight: 700; color: var(--navy); }
+.progress .l { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+.sticky-save {
+  position: sticky;
+  bottom: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 14px 0;
+  margin-top: 8px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}

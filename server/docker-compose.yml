@@ -1,0 +1,13 @@
+# Joins the shared `web` network so Caddy can reach it by container name.
+# No host ports: Caddy is the only thing exposing 80/443.
+services:
+  school:
+    build: ./src
+    container_name: school
+    restart: unless-stopped
+    env_file: .env.production
+    networks: [web]
+
+networks:
+  web:
+    external: true
