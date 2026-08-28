@@ -18,7 +18,15 @@ import { getPool, TenantDb } from '../db/tenant';
 import type { ActorRole } from '../domain/marksheet';
 
 export const SESSION_COOKIE = 'midway_session';
-const MAX_AGE_SECONDS = 60 * 60 * 10; // a school working day, plus slack
+
+/** Portal: a school working day, plus slack. */
+const PORTAL_MAX_AGE = 60 * 60 * 10;
+/**
+ * Mobile: 30 days. A parent opening the app to check a mark should not be
+ * asked to sign in every time, and the token carries no more authority than
+ * "show me my own child's released results".
+ */
+const MOBILE_MAX_AGE = 60 * 60 * 24 * 30;
 
 export interface Session {
   userId: number;
@@ -79,15 +87,26 @@ interface UserRow extends RowDataPacket {
   school_status: string;
 }
 
+/** Which surface is signing in. They allow different roles entirely. */
+export type Surface = 'portal' | 'mobile';
+
+const ALLOWED_ROLES: Record<Surface, ActorRole[]> = {
+  // Parents and students use the app; teachers do not use this system.
+  portal: ['school_admin', 'dos', 'dos_staff'],
+  // The app is for families only. School staff use the portal.
+  mobile: ['student_parent'],
+};
+
 /**
  * Verifies credentials and returns a session, or null.
  *
  * Returns the same null for "no such user" and "wrong password" so the
- * response cannot be used to enumerate who works at a school.
+ * response cannot be used to enumerate who works at or attends a school.
  */
 export async function authenticate(
   email: string,
   password: string,
+  surface: Surface = 'portal',
 ): Promise<Session | null> {
   const pool = getPool();
   const [rows] = await pool.query<UserRow[]>(
@@ -107,8 +126,9 @@ export async function authenticate(
   // how the platform owner actually disables a tenant.
   if (user.school_status !== 'active' && user.school_status !== 'trial') return null;
 
-  // Parents and students use the mobile app, not this portal.
-  if (user.role === 'student_parent' || user.role === 'teacher') return null;
+  // Each surface admits only its own roles: a parent cannot sign into the
+  // portal, and school staff cannot sign into the family app.
+  if (!ALLOWED_ROLES[surface].includes(user.role)) return null;
 
   if (!(await bcrypt.compare(password, user.password_hash))) return null;
 
@@ -119,7 +139,9 @@ export async function authenticate(
     schoolId: user.school_id,
     role: user.role,
     name: user.display_name,
-    expiresAt: Math.floor(Date.now() / 1000) + MAX_AGE_SECONDS,
+    expiresAt:
+      Math.floor(Date.now() / 1000) +
+      (surface === 'mobile' ? MOBILE_MAX_AGE : PORTAL_MAX_AGE),
   };
 }
 
@@ -134,7 +156,7 @@ export function setSessionCookie(session: Session): void {
     // Caddy terminates HTTPS in production; only development serves plain HTTP.
     secure: process.env.ALLOW_INSECURE_COOKIES !== '1',
     path: '/',
-    maxAge: MAX_AGE_SECONDS,
+    maxAge: PORTAL_MAX_AGE,
   });
 }
 

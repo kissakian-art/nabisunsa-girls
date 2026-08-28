@@ -147,6 +147,7 @@ async function main() {
   // Staff. The DoS office is a team: two clerks who enter, and the DoS who
   // checks and releases.
   const password = await bcrypt.hash('portal123', 10);
+  let firstParentId: number | null = null;
   const users: Record<string, number> = {};
   for (const [email, name, role] of [
     ['dos@nabisunsa.test', 'Mrs. Nakayiza', 'dos'],
@@ -160,15 +161,36 @@ async function main() {
     )).insertId;
   }
 
-  // A class of students.
+  // A class of students. The first three get family accounts so the mobile
+  // API can be exercised, including one parent with two daughters at the
+  // school — students.user_id repeats, which the API must handle.
   const studentIds: number[] = [];
   for (let i = 0; i < 28; i += 1) {
     const first = FIRST[i % FIRST.length];
     const last = LAST[(i * 3) % LAST.length];
+
+    let parentUser: number | null = null;
+    if (i === 0 || i === 1) {
+      // One account, two children.
+      parentUser = i === 0
+        ? (await q(
+            'INSERT INTO users (school_id, role, display_name, email, password_hash) VALUES (?,?,?,?,?)',
+            [school, 'student_parent', 'Mr. & Mrs. Nakato', 'parent1@nabisunsa.test', password],
+          )).insertId
+        : firstParentId;
+      if (i === 0) firstParentId = parentUser;
+    } else if (i === 2) {
+      parentUser = (await q(
+        'INSERT INTO users (school_id, role, display_name, email, password_hash) VALUES (?,?,?,?,?)',
+        [school, 'student_parent', 'Mr. Achieng', 'parent2@nabisunsa.test', password],
+      )).insertId;
+    }
+
     studentIds.push((await q(
-      `INSERT INTO students (school_id, registration_no, first_name, last_name, class_id, stream_id, level)
-       VALUES (?,?,?,?,?,?, 'O-Level')`,
-      [school, `NGSS/2026/${String(i + 1).padStart(3, '0')}`, first, last, s4, streamRed],
+      `INSERT INTO students (school_id, user_id, registration_no, first_name, last_name, class_id, stream_id, level, parent_name)
+       VALUES (?,?,?,?,?,?,?, 'O-Level', ?)`,
+      [school, parentUser, `NGSS/2026/${String(i + 1).padStart(3, '0')}`, first, last, s4, streamRed,
+       parentUser ? 'Registered parent' : null],
     )).insertId);
   }
 
@@ -227,6 +249,10 @@ Seeded "${SLUG}" (school id ${school}).
   Office staff          clerk1@nabisunsa.test   portal123
                         clerk2@nabisunsa.test   portal123
   Head teacher          admin@nabisunsa.test    portal123
+
+Family accounts (mobile app only):
+  Two daughters         parent1@nabisunsa.test  portal123
+  One daughter          parent2@nabisunsa.test  portal123
 
 7 marksheets for Term 3 2026, S4 Red, 28 students.
 `);

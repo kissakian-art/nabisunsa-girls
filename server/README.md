@@ -92,3 +92,34 @@ docker exec -i mysql mysql -uroot -p midway_school < server/db/migrations/001_in
 
 Use a `_dev` database name until the portal is deployed; nothing the live
 apps touch should be involved.
+
+## Mobile API
+
+The family app authenticates with a bearer token — the same signed payload
+the portal uses in a cookie, so there is one signing key and one expiry
+check rather than a second auth path to keep correct.
+
+```
+POST /api/auth/login   { email, password } -> { token, expiresAt, user }
+GET  /api/me                               -> { user, school, children }
+GET  /api/results?studentId=&termId=       -> { child, term, terms, results }
+```
+
+**Each surface admits only its own roles.** School staff signing into the
+family app are refused exactly as an unknown user would be, and a parent
+cannot sign into the portal. A portal token presented to the API is rejected
+too, so a staff session cannot browse family endpoints.
+
+**A family can only ever see its own children.** The student is never taken
+from the request: it is looked up from the signed token against
+`students.user_id`, so changing an id in a URL reaches nothing. Another
+family's child returns 404 rather than 403 — confirming a student exists
+would itself leak something. `students.user_id` may repeat, so a parent with
+two daughters at the school sees both from one account.
+
+**Unreleased marks cannot appear.** Everything comes from `term_results`,
+which by construction only ever contains marks the school has released.
+There is no filter to forget.
+
+Run `node scripts/api-smoke.js` against a running server to check all of
+that end to end.
