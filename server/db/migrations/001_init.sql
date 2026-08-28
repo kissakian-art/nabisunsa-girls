@@ -201,7 +201,11 @@ CREATE TABLE platform_users (
 CREATE TABLE users (
   id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   school_id     BIGINT UNSIGNED NOT NULL,
-  role          ENUM('school_admin','dos','teacher','student_parent') NOT NULL,
+  -- The Director of Studies runs an office, not a one-person job. Several
+  -- staff transcribe marksheets (dos_staff); the DoS signs off and releases
+  -- them. Splitting the two is what makes the four-eyes rule meaningful and
+  -- keeps release authority with the person accountable for it.
+  role          ENUM('school_admin','dos','dos_staff','teacher','student_parent') NOT NULL,
   display_name  VARCHAR(160)    NOT NULL,
   email         VARCHAR(190)    NULL,
   phone         VARCHAR(24)     NULL,

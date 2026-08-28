@@ -46,6 +46,12 @@ teachers do nothing differently — same paper marksheets, handed to the DoS.
 appear only as `submitted_by_teacher_id`, recording whose paper sheet a
 marksheet came from.
 
+**The DoS is an office, not a person.** The Director of Studies leads a team
+who do the actual transcription, so there are two roles: `dos_staff` may
+enter and correct marks, and `dos` may additionally verify, publish and
+withdraw. The clerk who types a mark is not the person who decides it reaches
+900 parents; release authority stays with the DoS, who is accountable for it.
+
 **Nothing reaches a parent until the school publishes it.** Also a written
 promise. Marksheets move `draft → entered → verified → published`, and
 `isVisibleToParents` returns true for exactly one of those. Verification must

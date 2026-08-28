@@ -17,6 +17,8 @@ const complete = (over: Partial<MarksheetState> = {}): MarksheetState => ({
 
 const DOS = { actorId: 10, actorRole: 'dos' as const };
 const OTHER_DOS = { actorId: 11, actorRole: 'dos' as const };
+const CLERK = { actorId: 20, actorRole: 'dos_staff' as const };
+const OTHER_CLERK = { actorId: 21, actorRole: 'dos_staff' as const };
 
 describe('the parent visibility guarantee', () => {
   it('shows marks to parents only once published', () => {
@@ -36,7 +38,8 @@ describe('who may act', () => {
       action: 'enter', actorId: 5, actorRole: 'teacher',
     });
     expect(result.allowed).toBe(false);
-    expect(result.reason).toMatch(/Teachers cannot enter marksheets/);
+    expect(result.reason).toMatch(/Teachers do not use this system/);
+    expect(result.reason).toMatch(/submitted on paper/);
     expect(result.reason).toMatch(/Director of Studies/);
   });
 
@@ -55,6 +58,56 @@ describe('who may act', () => {
       evaluateTransition(complete(), { action: 'enter', actorId: 2, actorRole: 'school_admin' })
         .allowed,
     ).toBe(true);
+  });
+});
+
+describe('the DoS office hierarchy', () => {
+  // The DoS leads an office of several staff. They do the transcription;
+  // the DoS decides what reaches parents.
+  it('lets office staff enter marks', () => {
+    expect(evaluateTransition(complete(), { action: 'enter', ...CLERK }).allowed).toBe(true);
+  });
+
+  it('lets office staff reopen a sheet to fix a mistake', () => {
+    expect(
+      evaluateTransition(complete({ status: 'entered' }), { action: 'reopen', ...CLERK }).allowed,
+    ).toBe(true);
+  });
+
+  it('refuses to let office staff verify', () => {
+    const state = complete({ status: 'entered', enteredBy: OTHER_CLERK.actorId });
+    const result = evaluateTransition(state, { action: 'verify', ...CLERK });
+    expect(result.allowed).toBe(false);
+    expect(result.reason).toMatch(/Only the Director of Studies can verify/);
+  });
+
+  it('refuses to let office staff publish to parents', () => {
+    // A clerk typing marks is not the person who decides 900 parents see them.
+    const result = evaluateTransition(complete({ status: 'verified' }), {
+      action: 'publish', ...CLERK,
+    });
+    expect(result.allowed).toBe(false);
+    expect(result.reason).toMatch(/Only the Director of Studies can publish/);
+    expect(result.reason).toMatch(/DoS's decision/);
+  });
+
+  it('refuses to let office staff withdraw a published sheet', () => {
+    expect(
+      evaluateTransition(complete({ status: 'published' }), { action: 'unpublish', ...CLERK })
+        .allowed,
+    ).toBe(false);
+  });
+
+  it('lets the DoS verify a sheet one of the staff entered', () => {
+    const state = complete({ status: 'entered', enteredBy: CLERK.actorId });
+    expect(evaluateTransition(state, { action: 'verify', ...DOS }).allowed).toBe(true);
+  });
+
+  it('still applies four-eyes when the DoS entered it themselves', () => {
+    // A small office where the DoS did the typing still needs a second reader.
+    const state = complete({ status: 'entered', enteredBy: DOS.actorId });
+    expect(evaluateTransition(state, { action: 'verify', ...DOS }).allowed).toBe(false);
+    expect(evaluateTransition(state, { action: 'verify', ...OTHER_DOS }).allowed).toBe(true);
   });
 });
 

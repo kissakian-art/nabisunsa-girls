@@ -19,8 +19,21 @@ export type MarksheetStatus = 'draft' | 'entered' | 'verified' | 'published';
 
 export type MarksheetAction = 'enter' | 'verify' | 'publish' | 'unpublish' | 'reopen';
 
-/** Roles permitted to move a marksheet along. Teachers appear nowhere. */
-export type ActorRole = 'school_admin' | 'dos' | 'teacher' | 'student_parent';
+/**
+ * Roles permitted to move a marksheet along. Teachers appear nowhere.
+ *
+ * The Director of Studies runs an office with several staff, so `dos_staff`
+ * covers the people who actually transcribe the paper marksheets. They can
+ * enter and correct, but not verify or publish: the clerk who types a mark
+ * is not the person who should decide it goes out to every parent in the
+ * school. Release authority stays with the DoS, who is accountable for it.
+ */
+export type ActorRole =
+  | 'school_admin'
+  | 'dos'
+  | 'dos_staff'
+  | 'teacher'
+  | 'student_parent';
 
 export interface MarksheetState {
   status: MarksheetStatus;
@@ -55,11 +68,13 @@ const TRANSITIONS: Record<MarksheetAction, { from: MarksheetStatus[]; to: Marksh
 
 /** Only these roles may act on a marksheet at all. */
 const PERMITTED: Record<MarksheetAction, ActorRole[]> = {
-  enter:     ['dos', 'school_admin'],
+  // Office staff do the transcription.
+  enter:     ['dos_staff', 'dos', 'school_admin'],
+  reopen:    ['dos_staff', 'dos', 'school_admin'],
+  // Signing off and releasing to parents stays with the DoS.
   verify:    ['dos', 'school_admin'],
   publish:   ['dos', 'school_admin'],
   unpublish: ['dos', 'school_admin'],
-  reopen:    ['dos', 'school_admin'],
 };
 
 /**
@@ -84,10 +99,22 @@ export function evaluateTransition(
   }
 
   if (!PERMITTED[request.action].includes(request.actorRole)) {
-    const who = request.actorRole === 'teacher' ? 'Teachers' : 'This role';
+    if (request.actorRole === 'teacher') {
+      return {
+        allowed: false,
+        reason:
+          'Teachers do not use this system. Marksheets are submitted on paper and processed by the Director of Studies office.',
+      };
+    }
+    if (request.actorRole === 'dos_staff') {
+      return {
+        allowed: false,
+        reason: `Only the Director of Studies can ${request.action} a marksheet. Office staff enter and correct marks; releasing them to parents is the DoS's decision.`,
+      };
+    }
     return {
       allowed: false,
-      reason: `${who} cannot ${request.action} marksheets. Marks are processed by the Director of Studies office.`,
+      reason: `This role cannot ${request.action} marksheets.`,
     };
   }
 
