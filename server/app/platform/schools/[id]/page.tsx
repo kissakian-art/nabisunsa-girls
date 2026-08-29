@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { currentPlatformSession } from '../../../../lib/platform-auth';
+import { verifyPlatformSession } from '../../../../lib/platform-auth';
 import { PlatformDb } from '../../../../db/tenant';
 import { getSchool, listStaff } from '../../../../lib/platform';
 import { STATUS_CONSEQUENCE, STATUS_LABEL, canSignIn } from '../../../../domain/platform';
@@ -27,7 +27,7 @@ export default async function SchoolPage({
   params: { id: string };
   searchParams: { created?: string };
 }) {
-  const session = currentPlatformSession();
+  const session = await verifyPlatformSession();
   if (!session) redirect('/platform/login');
 
   const id = Number(params.id);

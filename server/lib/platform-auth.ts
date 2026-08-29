@@ -42,6 +42,12 @@ export interface PlatformSession {
   platformUserId: number;
   name: string;
   email: string;
+  /**
+   * Unix seconds. Compared against the account's `password_changed_at`, so a
+   * session opened with a password that has since been changed is refused —
+   * see verifyPlatformSession below.
+   */
+  issuedAt: number;
   /** Unix seconds. */
   expiresAt: number;
 }
@@ -108,11 +114,13 @@ export async function authenticatePlatform(
 
   await pool.query('UPDATE platform_users SET last_login_at = NOW() WHERE id = ?', [user.id]);
 
+  const now = Math.floor(Date.now() / 1000);
   return {
     platformUserId: user.id,
     name: user.display_name,
     email: user.email,
-    expiresAt: Math.floor(Date.now() / 1000) + PLATFORM_MAX_AGE,
+    issuedAt: now,
+    expiresAt: now + PLATFORM_MAX_AGE,
   };
 }
 
@@ -133,8 +141,60 @@ export function clearPlatformCookie(): void {
   cookies().delete({ name: PLATFORM_COOKIE, path: '/platform' });
 }
 
+/**
+ * The cookie's own claim about who this is — signature and expiry checked,
+ * nothing else.
+ *
+ * Not enough on its own for anything that matters: it cannot know that the
+ * account has since been deactivated or its password changed. Use
+ * `verifyPlatformSession` for that.
+ */
 export function currentPlatformSession(): PlatformSession | null {
   return decodePlatformSession(cookies().get(PLATFORM_COOKIE)?.value);
+}
+
+interface AccountStateRow extends RowDataPacket {
+  is_active: number;
+  password_changed_at: Date | null;
+}
+
+/**
+ * The claim, checked against the account as it stands now.
+ *
+ * A signed token cannot be withdrawn — that is the price of having no session
+ * table — so without this, deactivating an administrator or changing a
+ * password would leave any session already open working for up to four more
+ * hours. On a console that can suspend every school, that is exactly the
+ * window that matters, because the reason for either action is usually that
+ * somebody else has the credentials.
+ *
+ * One row read per console request. The pages here already run heavier
+ * queries than this, and it is deliberately not done for school sessions,
+ * where avoiding the round trip is the whole design.
+ */
+export async function verifyPlatformSession(): Promise<PlatformSession | null> {
+  const session = currentPlatformSession();
+  if (!session) return null;
+
+  const [rows] = await getPool().query<AccountStateRow[]>(
+    'SELECT is_active, password_changed_at FROM platform_users WHERE id = ? LIMIT 1',
+    [session.platformUserId],
+  );
+
+  const account = rows[0];
+  // Deleted, or deactivated since this token was issued.
+  if (!account || !account.is_active) return null;
+
+  if (account.password_changed_at) {
+    // Whole seconds on both sides: the token carries Unix seconds and MySQL
+    // DATETIME has no sub-second part, so a change and an issue in the same
+    // second compare equal. Refusing only what is strictly older keeps a
+    // password change from invalidating the very session that made it.
+    const changedAt = Math.floor(new Date(account.password_changed_at).getTime() / 1000);
+    if (session.issuedAt < changedAt) return null;
+  }
+
+  return session;
 }
 
 export class NotPlatformAdminError extends Error {
@@ -149,11 +209,11 @@ export class NotPlatformAdminError extends Error {
  * Returns a `PlatformDb`, which is cross-tenant by design — reaching for it
  * is meant to be a visible decision, and here it is the whole point.
  */
-export function requirePlatformSession(): {
+export async function requirePlatformSession(): Promise<{
   session: PlatformSession;
   db: PlatformDb;
-} {
-  const session = currentPlatformSession();
+}> {
+  const session = await verifyPlatformSession();
   if (!session) throw new NotPlatformAdminError();
   return { session, db: new PlatformDb() };
 }

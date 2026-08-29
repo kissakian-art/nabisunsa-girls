@@ -6,6 +6,7 @@ import {
   SCHOOL_STATUSES,
   adminPasswordProblem,
   canSignIn,
+  passwordChangeProblem,
   slugProblem,
   statusChange,
   suggestSlug,
@@ -99,6 +100,31 @@ describe('administrator passwords', () => {
   it('refuses anything shorter', () => {
     expect(adminPasswordProblem('x'.repeat(MIN_ADMIN_PASSWORD - 1))).not.toBeNull();
     expect(adminPasswordProblem('x'.repeat(MIN_ADMIN_PASSWORD))).toBeNull();
+  });
+});
+
+describe('changing your own password', () => {
+  const good = 'a-perfectly-fine-one';
+
+  it('asks for the current one, so an open session is not enough to take over', () => {
+    expect(passwordChangeProblem('', good, good)).not.toBeNull();
+    expect(passwordChangeProblem('old-password-here', good, good)).toBeNull();
+  });
+
+  it('holds the new one to the same length as any other admin password', () => {
+    expect(passwordChangeProblem('old-password-here', 'short', 'short')).toBe(
+      adminPasswordProblem('short'),
+    );
+  });
+
+  it('refuses a mistyped confirmation', () => {
+    // There is no reset and no reset-by-email, so a typo here is an account
+    // nobody can get into.
+    expect(passwordChangeProblem('old-password-here', good, `${good}x`)).not.toBeNull();
+  });
+
+  it('refuses a change that changes nothing', () => {
+    expect(passwordChangeProblem(good, good, good)).not.toBeNull();
   });
 });
 

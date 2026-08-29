@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { currentPlatformSession } from '../../lib/platform-auth';
+import { verifyPlatformSession } from '../../lib/platform-auth';
 import { PlatformDb } from '../../db/tenant';
 import { listSchools, recentPlatformActivity } from '../../lib/platform';
 import { STATUS_LABEL, canSignIn } from '../../domain/platform';
@@ -12,7 +12,7 @@ const date = (value: Date | null) =>
   value ? new Date(value).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 
 export default async function PlatformConsole() {
-  const session = currentPlatformSession();
+  const session = await verifyPlatformSession();
   if (!session) redirect('/platform/login');
 
   const db = new PlatformDb();

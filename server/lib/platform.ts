@@ -20,6 +20,7 @@ import {
   DEFAULT_EOT_WEIGHT,
   DEFAULT_GRADING_SCALE,
   adminPasswordProblem,
+  passwordChangeProblem,
   slugProblem,
   statusChange,
   type SchoolStatus,
@@ -379,6 +380,50 @@ export async function addPlatformAdmin(
     [input.name.trim() || email, email, await bcrypt.hash(input.password, 10)],
   );
   return result.insertId;
+}
+
+interface PasswordRow extends RowDataPacket {
+  password_hash: string;
+}
+
+/**
+ * Changes your own password.
+ *
+ * The one credential operation this console has, and it is a change rather
+ * than a reset: the current password must be given, so a session left open
+ * on an unlocked machine is not enough to lock its owner out of the platform.
+ * Nobody, at any level, can set anybody else's password here.
+ *
+ * Stamping `password_changed_at` is what makes it mean something. Sessions
+ * are signed tokens with no server-side record, so the old password's
+ * sessions would otherwise keep working for their full four hours — and the
+ * usual reason for changing a password is that someone else has it.
+ */
+export async function changeOwnPassword(
+  db: PlatformDb,
+  userId: number,
+  current: string,
+  next: string,
+  confirmation: string,
+): Promise<void> {
+  const problem = passwordChangeProblem(current, next, confirmation);
+  if (problem) throw new PlatformError(problem);
+
+  const rows = await db.query<PasswordRow>(
+    'SELECT password_hash FROM platform_users WHERE id = ? AND is_active = 1 LIMIT 1',
+    [userId],
+  );
+  const account = rows[0];
+  if (!account) throw new PlatformError('That account is no longer active.');
+
+  if (!(await bcrypt.compare(current, account.password_hash))) {
+    throw new PlatformError('That is not your current password.');
+  }
+
+  await db.execute(
+    'UPDATE platform_users SET password_hash = ?, password_changed_at = NOW() WHERE id = ?',
+    [await bcrypt.hash(next, 10), userId],
+  );
 }
 
 /**

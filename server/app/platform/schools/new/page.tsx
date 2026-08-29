@@ -1,13 +1,13 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { currentPlatformSession } from '../../../../lib/platform-auth';
+import { verifyPlatformSession } from '../../../../lib/platform-auth';
 import { PlatformTopBar } from '../../topbar';
 import { SchoolForm } from './school-form';
 
 export const dynamic = 'force-dynamic';
 
-export default function NewSchoolPage() {
-  const session = currentPlatformSession();
+export default async function NewSchoolPage() {
+  const session = await verifyPlatformSession();
   if (!session) redirect('/platform/login');
 
   return (

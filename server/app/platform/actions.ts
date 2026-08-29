@@ -12,6 +12,7 @@ import {
 } from '../../lib/platform-auth';
 import {
   addPlatformAdmin,
+  changeOwnPassword,
   createSchool,
   setPlatformAdminActive,
   setSchoolFee,
@@ -86,7 +87,7 @@ export async function createSchoolAction(
 ): Promise<PlatformActionResult> {
   let schoolId: number;
   try {
-    const { db } = requirePlatformSession();
+    const { db } = await requirePlatformSession();
     const fee = String(formData.get('fee') ?? '').trim();
     schoolId = await createSchool(db, {
       slug: String(formData.get('slug') ?? ''),
@@ -113,7 +114,7 @@ export async function setStatusAction(
 ): Promise<PlatformActionResult> {
   const schoolId = Number(formData.get('schoolId'));
   try {
-    const { session, db } = requirePlatformSession();
+    const { session, db } = await requirePlatformSession();
     const to = String(formData.get('status'));
     if (!(SCHOOL_STATUSES as readonly string[]).includes(to)) {
       return { error: 'Unknown status.' };
@@ -137,7 +138,7 @@ export async function setFeeAction(
 ): Promise<PlatformActionResult> {
   const schoolId = Number(formData.get('schoolId'));
   try {
-    const { session, db } = requirePlatformSession();
+    const { session, db } = await requirePlatformSession();
     const raw = String(formData.get('fee') ?? '').trim();
     await setSchoolFee(db, schoolId, raw === '' ? null : Number(raw), {
       id: session.platformUserId,
@@ -152,12 +153,39 @@ export async function setFeeAction(
   return { ok: 'Fee updated.' };
 }
 
+export async function changePasswordAction(
+  _prev: unknown,
+  formData: FormData,
+): Promise<PlatformActionResult> {
+  try {
+    const { session, db } = await requirePlatformSession();
+    await changeOwnPassword(
+      db,
+      session.platformUserId,
+      String(formData.get('current') ?? ''),
+      String(formData.get('next') ?? ''),
+      String(formData.get('confirmation') ?? ''),
+    );
+
+    // The stamp that ends the old password's other sessions would end this
+    // one too, since it was issued before the change. Re-issuing keeps the
+    // person who just changed their password signed in, which is the one
+    // session that should survive.
+    const renewed = await authenticatePlatform(session.email, String(formData.get('next') ?? ''));
+    if (renewed) setPlatformCookie(renewed);
+  } catch (error) {
+    return fail(error);
+  }
+
+  return { ok: 'Password changed. Any other session using the old one is now signed out.' };
+}
+
 export async function addAdminAction(
   _prev: unknown,
   formData: FormData,
 ): Promise<PlatformActionResult> {
   try {
-    const { db } = requirePlatformSession();
+    const { db } = await requirePlatformSession();
     await addPlatformAdmin(db, {
       name: String(formData.get('name') ?? ''),
       email: String(formData.get('email') ?? ''),
@@ -176,7 +204,7 @@ export async function setAdminActiveAction(
   formData: FormData,
 ): Promise<PlatformActionResult> {
   try {
-    const { session, db } = requirePlatformSession();
+    const { session, db } = await requirePlatformSession();
     await setPlatformAdminActive(
       db,
       Number(formData.get('adminId')),

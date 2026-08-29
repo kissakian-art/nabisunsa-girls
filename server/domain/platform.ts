@@ -155,6 +155,36 @@ export function adminPasswordProblem(password: string): string | null {
   return null;
 }
 
+/**
+ * Changing your own password, as opposed to an administrator resetting
+ * somebody else's — which this console deliberately cannot do.
+ *
+ * The distinction is the current password. Proving you already know it makes
+ * this a change rather than a takeover, which is why it is asked for even
+ * though the person is already signed in: a session left open on an unlocked
+ * machine should not be enough to lock its owner out of the platform.
+ *
+ * The confirmation field is not ceremony either. There is no password reset
+ * and no reset-by-email here, so a mistyped new password is not an
+ * inconvenience — it is an account nobody can get into, on a console whose
+ * whole point is that it does not need a shell on the server.
+ */
+export function passwordChangeProblem(
+  current: string,
+  next: string,
+  confirmation: string,
+): string | null {
+  if (!current) return 'Enter your current password.';
+
+  const tooShort = adminPasswordProblem(next);
+  if (tooShort) return tooShort;
+
+  if (next !== confirmation) return 'The new password and its confirmation do not match.';
+  if (next === current) return 'That is the password you already have.';
+
+  return null;
+}
+
 // ---------------------------------------------------------------------
 // What a new school starts with
 // ---------------------------------------------------------------------

@@ -19,6 +19,7 @@ export function PlatformTopBar({ session }: { session: PlatformSession }) {
       <div className="actions">
         <Link href="/platform">Schools</Link>
         <Link href="/platform/admins">Administrators</Link>
+        <Link href="/platform/account">Your account</Link>
         <form action={platformSignOut}>
           <button className="btn secondary" type="submit">Sign out</button>
         </form>

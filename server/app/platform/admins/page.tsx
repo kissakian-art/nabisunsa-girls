@@ -1,5 +1,6 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { currentPlatformSession } from '../../../lib/platform-auth';
+import { verifyPlatformSession } from '../../../lib/platform-auth';
 import { PlatformDb } from '../../../db/tenant';
 import { listPlatformAdmins } from '../../../lib/platform';
 import { PlatformTopBar } from '../topbar';
@@ -13,7 +14,7 @@ const date = (value: Date | null) =>
     : '—';
 
 export default async function AdminsPage() {
-  const session = currentPlatformSession();
+  const session = await verifyPlatformSession();
   if (!session) redirect('/platform/login');
 
   const admins = await listPlatformAdmins(new PlatformDb());
@@ -68,9 +69,11 @@ export default async function AdminsPage() {
         <div className="card">
           <h2>Add an administrator</h2>
           <p className="sub">
-            There is no password reset here and none by email. An administrator who loses their
-            password is replaced by adding a new account and deactivating the old one, which leaves
-            a trail; a reset button on a console this powerful would not.
+            Each administrator changes their own password under{' '}
+            <Link href="/platform/account">Your account</Link>, which asks for the current one.
+            There is nothing here that sets somebody else&rsquo;s: an administrator who has lost
+            theirs is replaced by adding an account and deactivating the old one, which leaves a
+            trail, where a reset button on a console this powerful would not.
           </p>
           <AddAdminForm />
         </div>
