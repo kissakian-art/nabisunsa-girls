@@ -6,6 +6,8 @@
  * admission lands on the school's desk, not ours.
  */
 
+import { take } from './ratelimit';
+
 export interface AdvisorSubject {
   subject: string;
   score: number | null;
@@ -80,43 +82,16 @@ worried about her.`;
 // Rate limit
 // ---------------------------------------------------------------------
 
-const CAPACITY = 12;
-const REFILL_MS = 60_000;
-
-interface Bucket {
-  tokens: number;
-  updatedAt: number;
-}
-
-const buckets = new Map<number, Bucket>();
+const QUESTION_LIMIT = { capacity: 12, windowMs: 60_000 };
 
 /**
  * A token bucket per account: a short burst is fine, a flood is not.
  *
- * In memory, so it resets when the container restarts and is per-instance.
- * That is proportionate to what it guards — our own Gemini bill against a
- * runaway client — and avoids a database write on every question. If the
- * portal is ever run as more than one instance, this needs moving to shared
- * storage.
+ * The key is ours now that the advisor runs on the server, so a runaway
+ * client is our Gemini bill rather than the family's.
  */
 export function takeToken(userId: number, now = Date.now()): boolean {
-  const bucket = buckets.get(userId) ?? { tokens: CAPACITY, updatedAt: now };
-
-  const refill = ((now - bucket.updatedAt) / REFILL_MS) * CAPACITY;
-  bucket.tokens = Math.min(CAPACITY, bucket.tokens + Math.max(0, refill));
-  bucket.updatedAt = now;
-
-  if (bucket.tokens < 1) {
-    buckets.set(userId, bucket);
-    return false;
-  }
-
-  bucket.tokens -= 1;
-  buckets.set(userId, bucket);
-  return true;
+  return take(`advisor:${userId}`, QUESTION_LIMIT, now);
 }
 
-/** Test seam. */
-export function resetRateLimits(): void {
-  buckets.clear();
-}
+export { resetRateLimits } from './ratelimit';

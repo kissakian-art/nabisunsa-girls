@@ -160,6 +160,129 @@ const get = (path, token) =>
   check('and returns that child, not the first',
     secondPayload.child.id === ownChildIds[1]);
 
+  console.log('\n--- a printed slip becomes an account ---');
+  let activatedToken = null;
+  {
+    const SCHOOL = 'nabisunsa-girls';
+
+    const wrong = await post('/api/auth/activate', {
+      school: SCHOOL,
+      registrationNo: 'NGSS/2026/004',
+      code: 'AAAAAA',
+      password: 'kampala2026',
+    });
+    check('a wrong code is refused', wrong.status === 400, `HTTP ${wrong.status}`);
+    const wrongBody = await wrong.json();
+
+    // A stranger must not be able to use this endpoint to find out whether a
+    // particular child attends the school.
+    const unknown = await post('/api/auth/activate', {
+      school: SCHOOL,
+      registrationNo: 'NGSS/2026/999',
+      code: 'AAAAAA',
+      password: 'kampala2026',
+    });
+    const unknownBody = await unknown.json();
+    check('an unknown registration number reads exactly like a wrong code',
+      unknownBody.error === wrongBody.error, unknownBody.error);
+
+    const expired = await post('/api/auth/activate', {
+      school: SCHOOL,
+      registrationNo: 'NGSS/2026/006',
+      code: 'EXPRD4',
+      password: 'kampala2026',
+    });
+    const expiredBody = await expired.json();
+    check('an expired slip says so, and what to do', /expired/i.test(expiredBody.error || '')
+      && /school office/i.test(expiredBody.error || ''), expiredBody.error);
+
+    const short = await post('/api/auth/activate', {
+      school: SCHOOL,
+      registrationNo: 'NGSS/2026/004',
+      code: 'PAR-ENT',
+      password: 'short',
+    });
+    check('a too-short password is refused', short.status === 400, `HTTP ${short.status}`);
+
+    // The code as it is printed: hyphenated, and typed in lower case by a
+    // phone that capitalises nothing.
+    const activated = await post('/api/auth/activate', {
+      school: SCHOOL,
+      registrationNo: 'NGSS/2026/004',
+      code: 'par-ent',
+      password: 'kampala2026',
+      phone: '+256 706 090021',
+    });
+    check('the slip is accepted as printed', activated.status === 200, `HTTP ${activated.status}`);
+    const activatedBody = await activated.json();
+    activatedToken = activatedBody.token;
+    check('and signs the parent straight in', typeof activatedToken === 'string');
+
+    const newProfile = await (await get('/api/me', activatedToken)).json();
+    check('the new account sees exactly one child', newProfile.children?.length === 1,
+      `${newProfile.children?.length} child(ren)`);
+    check('and it is the child on the slip',
+      newProfile.children?.[0]?.registrationNo === 'NGSS/2026/004',
+      newProfile.children?.[0]?.registrationNo);
+
+    const again = await post('/api/auth/activate', {
+      school: SCHOOL,
+      registrationNo: 'NGSS/2026/004',
+      code: 'PARENT',
+      password: 'someoneelse2026',
+    });
+    const againBody = await again.json();
+    check('the same slip cannot be used twice', again.status === 400, `HTTP ${again.status}`);
+    check('and the second person is told it is already used',
+      /already been used/i.test(againBody.error || ''), againBody.error);
+
+    // The phone number the parent gave is how they will sign in tomorrow,
+    // written the way they would write it rather than the way it was typed.
+    const byPhone = await post('/api/auth/login', {
+      email: '0706090021',
+      password: 'kampala2026',
+      school: SCHOOL,
+    });
+    check('they can sign in with their phone number', byPhone.status === 200,
+      `HTTP ${byPhone.status}`);
+    const noSchool = await post('/api/auth/login', {
+      email: '0706090021',
+      password: 'kampala2026',
+    });
+    check('a phone number without a school is refused', noSchool.status === 401,
+      `HTTP ${noSchool.status}`);
+  }
+
+  console.log('\n--- a second daughter joins the same account ---');
+  {
+    const linked = await post(
+      '/api/children/link',
+      { registrationNo: 'NGSS/2026/005', code: 'gua-rd3' },
+      activatedToken,
+    );
+    check('a second slip attaches to the account', linked.status === 200,
+      `HTTP ${linked.status}`);
+    const body = await linked.json();
+    check('and the family now sees both children', body.children?.length === 2,
+      `${body.children?.length} children`);
+
+    const anonLink = await post('/api/children/link', {
+      registrationNo: 'NGSS/2026/005', code: 'GUARD3',
+    });
+    check('linking without a session is refused', anonLink.status === 401,
+      `HTTP ${anonLink.status}`);
+
+    // Someone else's already-claimed child cannot be grafted on with a code
+    // that no longer exists for them.
+    const stealing = await post(
+      '/api/children/link',
+      { registrationNo: 'NGSS/2026/001', code: 'PARENT' },
+      activatedToken,
+    );
+    check("another family's child cannot be claimed", stealing.status === 400,
+      `HTTP ${stealing.status}`);
+  }
+
   console.log('\n--- a suspended school serves no marks ---');
   {
     // The commercial kill switch. It has to be enforced here rather than in

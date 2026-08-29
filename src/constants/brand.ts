@@ -14,6 +14,12 @@
 const env = process.env;
 
 export const Brand = {
+  /**
+   * The school's identifier on the server. Sent with sign-in and activation:
+   * a phone number is unique only within a school, so the server needs to
+   * know which school is asking, and a branded build always knows.
+   */
+  slug: env.EXPO_PUBLIC_SCHOOL_SLUG || 'nabisunsa-girls',
   name: env.EXPO_PUBLIC_SCHOOL_NAME || "Nabisunsa Girls' Secondary School",
   shortName: env.EXPO_PUBLIC_SCHOOL_SHORT_NAME || 'Nabisunsa',
   motto: env.EXPO_PUBLIC_SCHOOL_MOTTO || 'Empowerment Through Education',

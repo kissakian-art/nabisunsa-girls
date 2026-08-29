@@ -19,6 +19,7 @@ const ORDERED_DELETES = [
   'DELETE FROM marks WHERE school_id = ?',
   'DELETE FROM term_results WHERE school_id = ?',
   'DELETE FROM marksheets WHERE school_id = ?',
+  'DELETE FROM student_invites WHERE school_id = ?',
   'DELETE FROM student_uce_grades WHERE student_id IN (SELECT id FROM students WHERE school_id = ?)',
   'DELETE FROM student_subjects WHERE student_id IN (SELECT id FROM students WHERE school_id = ?)',
   'DELETE FROM students WHERE school_id = ?',

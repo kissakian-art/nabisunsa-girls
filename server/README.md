@@ -113,6 +113,7 @@ staff enter marks, they do not configure the school.
 docker exec -i mysql mysql -uroot -p -e 'CREATE DATABASE midway_school'
 docker exec -i mysql mysql -uroot -p midway_school < server/db/migrations/001_init.sql
 docker exec -i mysql mysql -uroot -p midway_school < server/db/migrations/002_subject_catalog.sql
+docker exec -i mysql mysql -uroot -p midway_school < server/db/migrations/003_family_invites.sql
 ```
 
 `002` loads the national subject catalogue — shared reference data every
@@ -144,6 +145,49 @@ no position rather than coming last.
 
 `node scripts/report-smoke.js` checks all of that in a browser and renders
 the print view to PDF to confirm it paginates one card per page.
+
+## Family accounts
+
+A parent cannot sign into the app until the school gives them a way in, and
+nine hundred of them cannot be created by hand. `/setup/families` is that
+step: pick a class, generate a code per student, print the slips, hand them
+out with the report cards.
+
+**The code is printed once and stored as a bcrypt hash.** A stolen copy of
+`student_invites` must not be a list of nine hundred working credentials, so
+the codes exist in readable form only in the response that created them —
+the screen says so before the button is pressed, and reprinting revokes the
+slips already handed out. Reissuing for a class skips students who already
+have a live code, so "print for the twelve who lost theirs" does not
+invalidate the other 200 slips.
+
+**The alphabet excludes both halves of every confusable pair** — no O and no
+0, no I, 1 or L, no S or 5 — and the code is printed in two groups of three.
+A parent reads it off paper, in a corridor, possibly in a hurry. Normalising
+what they typed strips case, spaces and the hyphen, and deliberately guesses
+at nothing else: folding a typed "0" onto "O" could turn a wrong code into a
+different valid one.
+
+**No refusal says whether a student exists.** Anyone can download the app,
+and "no such registration number" would let a stranger check whether a
+particular child attends the school. The one exception is a code that has
+already been used, which is worth saying because the next step is different
+— a password reset rather than a retry — and gives nothing away.
+
+**The office cannot read or set a family password.** Staff who could would be
+able to sign in as a parent and read her daughter's marks. A forgotten
+password is handled by withdrawing that account's access to the child and
+printing a new slip.
+
+**Sign-in takes a phone number or an email address.** Most families here have
+the first and not the second. A phone number is unique only within a school,
+so the app sends its own school slug with it — a branded build always knows
+which school it is.
+
+    npm run smoke:families
+
+Drives the whole thing in a browser: staff cannot issue, codes are hashed,
+reprinting revokes, and the printed sheet is checked as a PDF.
 
 ## Mobile API
 
@@ -215,6 +259,7 @@ to shared storage if the portal is ever run as more than one).
 ## Running the browser suites
 
     npm run smoke          portal: marks entry, verify, release
+    npm run smoke:families access slips for parents
     npm run smoke:api      mobile API and the advisor
     npm run smoke:setup    onboarding a school from nothing
     npm run smoke:reports  report cards and print output

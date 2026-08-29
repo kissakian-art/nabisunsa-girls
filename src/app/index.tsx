@@ -25,6 +25,7 @@ import {
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import { useRouter } from 'expo-router';
 import { Colors, Spacing } from '../constants/theme';
 import { Brand } from '../constants/brand';
 import { useSession } from '../services/session';
@@ -32,6 +33,7 @@ import { useSession } from '../services/session';
 export default function LoginScreen() {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+  const router = useRouter();
   const { signIn } = useSession();
 
   const [email, setEmail] = useState('');
@@ -43,7 +45,7 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     setErrorMessage('');
     if (!email.trim() || !password) {
-      setErrorMessage('Please enter your email and password.');
+      setErrorMessage('Please enter your email or phone number, and your password.');
       return;
     }
 
@@ -106,7 +108,7 @@ export default function LoginScreen() {
           ) : null}
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.text }]}>Email address</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Email or phone number</Text>
             <View
               style={[
                 styles.inputWrapper,
@@ -121,11 +123,13 @@ export default function LoginScreen() {
               />
               <TextInput
                 style={[styles.input, { color: colors.text }]}
-                placeholder="The address you gave the school"
+                placeholder="Email or phone number"
                 placeholderTextColor={colors.textSecondary + '80'}
                 value={email}
                 onChangeText={setEmail}
-                keyboardType="email-address"
+                // Not the email keyboard: this field takes a phone number
+                // just as often, and that keyboard hides the digits.
+                keyboardType="default"
                 autoCapitalize="none"
                 autoCorrect={false}
                 onSubmitEditing={handleLogin}
@@ -180,12 +184,21 @@ export default function LoginScreen() {
             )}
           </TouchableOpacity>
 
-          {/* A parent who cannot get in must be told who to ask. There is no
-              self-service password reset: accounts are created by the school,
-              and the school is the only party that can confirm who a parent
-              is. */}
+          {/* First time here: the school hands out a printed slip, and this
+              is the only route from that piece of paper to an account. */}
+          <TouchableOpacity
+            style={[styles.secondaryBtn, { borderColor: colors.gold }]}
+            onPress={() => router.push('/activate')}
+          >
+            <Text style={[styles.secondaryBtnText, { color: colors.primary }]}>
+              First time? Use the slip from the school
+            </Text>
+          </TouchableOpacity>
+
+          {/* There is no self-service password reset: accounts belong to the
+              school, and only the school can confirm who a parent is. */}
           <Text style={[styles.helpText, { color: colors.textSecondary }]}>
-            Forgotten your password, or never received an account? Contact the
+            Forgotten your password, or never received a slip? Contact the
             school office at {Brand.contactEmail}.
           </Text>
         </View>
@@ -305,6 +318,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     letterSpacing: 0.5,
+  },
+  secondaryBtn: {
+    height: 46,
+    borderWidth: 1,
+    borderRadius: Spacing.two,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: Spacing.three,
+  },
+  secondaryBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
   helpText: {
     fontSize: 11,

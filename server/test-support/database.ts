@@ -11,7 +11,34 @@ import fs from 'fs';
 import path from 'path';
 import mysql from 'mysql2/promise';
 
-const MIGRATION = path.join(__dirname, '..', 'db', 'migrations', '001_init.sql');
+const MIGRATIONS = path.join(__dirname, '..', 'db', 'migrations');
+
+/**
+ * Every migration, in order.
+ *
+ * Reading the directory rather than naming 001 keeps the tests honest: a
+ * table added in a later migration is part of the schema that ships, so the
+ * isolation tests must be run against it too.
+ */
+const migrationFiles = () =>
+  fs.readdirSync(MIGRATIONS).filter((name) => name.endsWith('.sql')).sort();
+
+/**
+ * Splits a migration into statements.
+ *
+ * Line comments are stripped FIRST. The `mysql` client that applies these in
+ * production does not care, but a naive split on ";" does: a comment ending
+ * in a semicolon — which is ordinary English — would otherwise cut a CREATE
+ * TABLE in half and fail here while working in production. That happened.
+ */
+function statementsIn(file: string): string[] {
+  const sql = fs
+    .readFileSync(file, 'utf8')
+    .split('\n')
+    .map((line) => line.replace(/--\s.*$/, ''))
+    .join('\n');
+  return sql.split(/;\s*$/m).map((s) => s.trim()).filter(Boolean);
+}
 
 export interface TestDatabase {
   pool: mysql.Pool;
@@ -48,10 +75,11 @@ export async function createTestDatabase(
     decimalNumbers: true,
   });
 
-  const sql = fs.readFileSync(MIGRATION, 'utf8');
   const conn = await pool.getConnection();
-  for (const statement of sql.split(/;\s*$/m).map((s) => s.trim()).filter(Boolean)) {
-    await conn.query(statement);
+  for (const file of migrationFiles()) {
+    for (const statement of statementsIn(path.join(MIGRATIONS, file))) {
+      await conn.query(statement);
+    }
   }
   const [school] = await conn.query<mysql.ResultSetHeader>(
     'INSERT INTO schools (slug, name, status) VALUES (?, ?, ?)',

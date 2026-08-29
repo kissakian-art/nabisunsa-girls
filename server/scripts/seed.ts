@@ -9,6 +9,7 @@
 
 import mysql from 'mysql2/promise';
 import bcrypt from 'bcryptjs';
+import { expiryFrom } from '../domain/invites';
 import { TenantDb, closePool } from '../db/tenant';
 import { recomputeTermResults } from '../lib/results';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -161,6 +162,24 @@ async function main() {
     )).insertId);
   }
 
+  // Access slips, the way a school issues them. The codes are fixed here so
+  // the demo and the tests have something to type; real ones are random and
+  // are printed once. Every character is from the code alphabet.
+  const invite = async (index: number, code: string, expiresAt: Date, status = 'unused') => {
+    await q(
+      `INSERT INTO student_invites
+         (school_id, student_id, code_hash, status, issued_by, expires_at)
+       VALUES (?,?,?,?,?,?)`,
+      [school, studentIds[index], await bcrypt.hash(code, 10), status, users.dos, expiresAt],
+    );
+  };
+  const live = expiryFrom(new Date());
+  const lapsed = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  await invite(3, 'PARENT', live);
+  await invite(4, 'GUARD3', live);
+  // A slip nobody used in time, so the expiry path is always exercised.
+  await invite(5, 'EXPRD4', lapsed);
+
   // Marksheets across the workflow, so the dashboard shows a realistic term.
   const plan: [string, string, 'draft' | 'entered' | 'verified' | 'published'][] = [
     ['MTC', 'EOT', 'draft'],
@@ -228,6 +247,11 @@ Seeded "${SLUG}" (school id ${school}).
 Family accounts (mobile app only):
   Two daughters         parent1@nabisunsa.test  portal123
   One daughter          parent2@nabisunsa.test  portal123
+
+Access slips waiting to be used (the code a parent types):
+  ${'NGSS/2026/004'}  PAR-ENT   unused
+  ${'NGSS/2026/005'}  GUA-RD3   unused, for adding a second child
+  ${'NGSS/2026/006'}  EXP-RD4   expired
 
 7 marksheets for Term 3 2026, S4 Red, 28 students.
 `);

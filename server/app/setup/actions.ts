@@ -1,11 +1,13 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import type { RowDataPacket } from 'mysql2';
 import { requireSession } from '../../lib/auth';
 import {
   addClass, addStream, adoptCatalogSubjects, generateMarksheets,
   importStudents, parseStudentList, SetupError,
 } from '../../lib/setup';
+import { issueInvites, resetFamilyAccess, type IssuedSlip } from '../../lib/families';
 import { currentTerm } from '../../lib/marksheets';
 
 /** Setup is administration: office staff enter marks, they do not configure. */
@@ -103,6 +105,94 @@ export async function generateMarksheetsAction(_prev: unknown, _formData: FormDa
         ? `Nothing to create — all ${outcome.existing} marksheets already exist.`
         : `Created ${outcome.created} marksheet(s).`
           + (outcome.existing ? ` ${outcome.existing} already existed.` : ''),
+    };
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+// ---------------------------------------------------------------------
+// Family accounts
+// ---------------------------------------------------------------------
+
+interface StudentIdRow extends RowDataPacket { id: number }
+
+/**
+ * What the family screens get back. The slips are part of the result because
+ * the codes exist in readable form only in the moment they are created.
+ */
+export interface FamilyActionResult {
+  ok?: string;
+  error?: string;
+  slips?: IssuedSlip[];
+}
+
+/**
+ * Issues codes for a class and hands them back to be printed.
+ *
+ * The codes travel back in the action's result because this is the only
+ * moment they exist in readable form — they are stored hashed, so a slip
+ * that is not printed now cannot be recovered, only reissued. The screen
+ * says so before the office presses the button.
+ */
+export async function issueInvitesAction(
+  _prev: unknown,
+  formData: FormData,
+): Promise<FamilyActionResult> {
+  try {
+    const { db, session } = requireAdmin();
+    const streamRaw = String(formData.get('streamId') ?? '');
+    const outcome = await issueInvites(db, {
+      classId: Number(formData.get('classId')),
+      streamId: streamRaw === '' ? null : Number(streamRaw),
+      reissue: formData.get('reissue') === 'on',
+      issuedBy: session.userId,
+    });
+
+    revalidatePath('/setup/families');
+
+    const parts = [`${outcome.slips.length} code(s) to print.`];
+    if (outcome.alreadyActive > 0) {
+      parts.push(`${outcome.alreadyActive} family account(s) already active — left alone.`);
+    }
+    if (outcome.alreadyIssued > 0) {
+      parts.push(
+        `${outcome.alreadyIssued} student(s) already have a live code — tick "reprint" to replace it.`,
+      );
+    }
+    return { ok: parts.join(' '), slips: outcome.slips };
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/**
+ * A forgotten password, handled as a new slip.
+ *
+ * The office cannot set a family's password — staff who can do that can sign
+ * in as that parent and read her child's marks. Detaching the account and
+ * printing a fresh code keeps the school in control of access without giving
+ * it access.
+ */
+export async function resetFamilyAction(
+  _prev: unknown,
+  formData: FormData,
+): Promise<FamilyActionResult> {
+  try {
+    const { db, session } = requireAdmin();
+    const registrationNo = String(formData.get('registrationNo') ?? '').trim();
+    if (!registrationNo) return { error: 'Enter the student’s registration number.' };
+
+    const student = await db.selectOne<StudentIdRow>('students', {
+      where: { registration_no: registrationNo },
+    });
+    if (!student) return { error: `No student with registration number ${registrationNo}.` };
+
+    const slip = await resetFamilyAccess(db, Number(student.id), session.userId);
+    revalidatePath('/setup/families');
+    return {
+      ok: 'Previous access withdrawn. Print the new slip below.',
+      slips: slip ? [slip] : ([] as IssuedSlip[]),
     };
   } catch (error) {
     return fail(error);

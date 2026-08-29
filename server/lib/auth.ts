@@ -104,19 +104,40 @@ const ALLOWED_ROLES: Record<Surface, ActorRole[]> = {
  * response cannot be used to enumerate who works at or attends a school.
  */
 export async function authenticate(
-  email: string,
+  identifier: string,
   password: string,
   surface: Surface = 'portal',
+  schoolSlug?: string,
 ): Promise<Session | null> {
   const pool = getPool();
+  const value = identifier.trim();
+
+  // A parent signs in with whatever the school holds for them. Most families
+  // here have a phone number and no email, so the app accepts either.
+  //
+  // Email is unique across the platform, so it identifies an account on its
+  // own. A phone number is unique only within a school (the same number can
+  // belong to families at two client schools), so it must be accompanied by
+  // the school — which a branded app always knows, since it was built for
+  // one school.
+  const byPhone = !value.includes('@');
+  if (byPhone && !schoolSlug) return null;
+
   const [rows] = await pool.query<UserRow[]>(
-    `SELECT u.id, u.school_id, u.role, u.display_name, u.password_hash, u.is_active,
-            s.status AS school_status
-       FROM users u
-       JOIN schools s ON s.id = u.school_id
-      WHERE u.email = ?
-      LIMIT 1`,
-    [email.trim().toLowerCase()],
+    byPhone
+      ? `SELECT u.id, u.school_id, u.role, u.display_name, u.password_hash, u.is_active,
+                s.status AS school_status
+           FROM users u
+           JOIN schools s ON s.id = u.school_id
+          WHERE s.slug = ? AND u.phone = ?
+          LIMIT 1`
+      : `SELECT u.id, u.school_id, u.role, u.display_name, u.password_hash, u.is_active,
+                s.status AS school_status
+           FROM users u
+           JOIN schools s ON s.id = u.school_id
+          WHERE u.email = ?
+          LIMIT 1`,
+    byPhone ? [schoolSlug, normalisePhone(value)] : [value.toLowerCase()],
   );
 
   const user = rows[0];
@@ -143,6 +164,22 @@ export async function authenticate(
       Math.floor(Date.now() / 1000) +
       (surface === 'mobile' ? MOBILE_MAX_AGE : PORTAL_MAX_AGE),
   };
+}
+
+/**
+ * One shape for a Ugandan phone number.
+ *
+ * A parent writes 0706 090021 on a form, the office types +256706090021, and
+ * the parent then signs in with 0706090021. Those are one number, and
+ * without this they are three accounts.
+ */
+export function normalisePhone(input: string): string {
+  const digits = input.replace(/[^0-9]/g, '');
+  if (digits.startsWith('256')) return `0${digits.slice(3)}`;
+  if (digits.startsWith('0')) return digits;
+  // A bare 9-digit local number, as often written on a school form.
+  if (digits.length === 9) return `0${digits}`;
+  return digits;
 }
 
 export async function hashPassword(plain: string): Promise<string> {

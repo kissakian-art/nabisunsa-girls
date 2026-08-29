@@ -27,6 +27,8 @@ export default async function SetupPage() {
       hint: 'Paste a class list straight from a spreadsheet' },
     { href: '/setup/marksheets', label: 'Marksheets', count: null,
       hint: 'Create this term’s marksheets in one go' },
+    { href: '/setup/families', label: 'Family accounts', count: null,
+      hint: 'Print the slips parents use to sign into the app' },
   ];
 
   return (

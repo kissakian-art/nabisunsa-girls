@@ -173,9 +173,50 @@ input:focus, select:focus { outline: 2px solid var(--navy-light); outline-offset
 
 .report-empty { padding: 20px 0; color: var(--muted); font-style: italic; }
 
+/* ---------------------------------------------------------------
+   Access slips
+   The school prints these, cuts them up and hands them out. Two
+   columns on A4 gives a slip about the size of a receipt, which is
+   what a parent will actually keep in a purse.
+   --------------------------------------------------------------- */
+.slips {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+.slip {
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  padding: 14px 16px;
+  /* Never split a slip across a page: half a code is worse than none. */
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+.slip-school { font-weight: 700; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; }
+.slip-title  { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+.slip-name   { font-size: 17px; font-weight: 700; }
+.slip-class  { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+.slip-fields { width: 100%; margin: 0 0 10px; }
+.slip-fields td { padding: 3px 0; font-size: 13px; border: none; }
+.slip-fields td:first-child { color: var(--muted); width: 45%; }
+.slip-code {
+  font-family: ui-monospace, monospace;
+  font-size: 20px;
+  letter-spacing: .12em;
+}
+.slip-steps { margin: 0 0 8px; padding-left: 18px; font-size: 12px; line-height: 1.6; }
+.slip-foot  { font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+@media print {
+  .slips { gap: 8px; }
+  .slip { border: 1px dashed #999; }
+}
+
 @media print {
   /* The page furniture is for the office, not for the parent holding this. */
   .topbar, .no-print { display: none !important; }
+  /* The slips are the page when printing: no card border around them. */
+  #slips { border: none; box-shadow: none; padding: 0; margin: 0; }
   body { background: #fff; }
   .wrap { max-width: none; padding: 0; }
   .report {

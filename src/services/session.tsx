@@ -30,8 +30,10 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ApiError,
+  activate as apiActivate,
   getProfile,
   getToken,
+  linkChild as apiLinkChild,
   signIn as apiSignIn,
   signOut as apiSignOut,
   type Child,
@@ -52,7 +54,17 @@ export interface SessionValue {
   /** The school has been switched off by Midway. */
   locked: boolean;
   lockReason: string | null;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (identifier: string, password: string) => Promise<void>;
+  /** Turning the school's printed slip into an account. */
+  activate: (input: {
+    registrationNo: string;
+    code: string;
+    password: string;
+    displayName?: string;
+    phone?: string;
+  }) => Promise<void>;
+  /** A second slip, for a second daughter, on the same account. */
+  linkChild: (registrationNo: string, code: string) => Promise<void>;
   signOut: () => Promise<void>;
   selectChild: (studentId: number) => void;
   refresh: () => Promise<void>;
@@ -135,10 +147,29 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [remember, forget]);
 
   const signIn = useCallback(
-    async (email: string, password: string) => {
-      const next = await apiSignIn(email, password);
+    async (identifier: string, password: string) => {
+      const next = await apiSignIn(identifier, password);
       await remember(next);
       setActiveChildId(next.children[0]?.id ?? null);
+    },
+    [remember],
+  );
+
+  const activate = useCallback(
+    async (input: Parameters<typeof apiActivate>[0]) => {
+      const next = await apiActivate(input);
+      await remember(next);
+      setActiveChildId(next.children[0]?.id ?? null);
+    },
+    [remember],
+  );
+
+  const linkChild = useCallback(
+    async (registrationNo: string, code: string) => {
+      await apiLinkChild(registrationNo, code);
+      // The profile carries the child list, so it has to be re-read rather
+      // than patched — the new daughter must appear in the picker at once.
+      await remember(await getProfile());
     },
     [remember],
   );
@@ -177,11 +208,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       locked: status === 'suspended' || status === 'closed',
       lockReason: profile?.school?.suspendedReason ?? null,
       signIn,
+      activate,
+      linkChild,
       signOut,
       selectChild,
       refresh,
     };
-  }, [loading, profile, stale, activeChildId, signIn, signOut, selectChild, refresh]);
+  }, [
+    loading, profile, stale, activeChildId,
+    signIn, activate, linkChild, signOut, selectChild, refresh,
+  ]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

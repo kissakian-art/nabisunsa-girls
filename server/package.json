@@ -11,7 +11,9 @@
     "smoke": "node scripts/smoke.js",
     "smoke:api": "node scripts/api-smoke.js",
     "smoke:setup": "node scripts/setup-smoke.js",
-    "smoke:reports": "node scripts/report-smoke.js"
+    "smoke:reports": "node scripts/report-smoke.js",
+    "smoke:families": "node scripts/families-smoke.js",
+    "test:db": "jest server/db --forceExit"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

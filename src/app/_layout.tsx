@@ -62,8 +62,9 @@ function RootNavigator() {
     }
 
     if (!signedIn) {
-      // Signed out: only the login screen at the root is reachable.
-      if (section) router.replace('/');
+      // Signed out: the login screen, and the activation screen a parent
+      // reaches from it with the slip the school gave them.
+      if (section && section !== 'activate') router.replace('/');
       return;
     }
 
@@ -89,6 +90,7 @@ function RootNavigator() {
     <ThemeProvider value={scheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
+        <Stack.Screen name="activate" />
         <Stack.Screen name="lock" />
         <Stack.Screen name="ai-chat" options={{ presentation: 'modal' }} />
         <Stack.Screen name="report-card" />

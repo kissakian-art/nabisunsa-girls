@@ -83,6 +83,7 @@ export const TENANT_TABLES = [
   'combinations',
   'users',
   'students',
+  'student_invites',
   'teacher_allocations',
   'assessments',
   'marksheets',

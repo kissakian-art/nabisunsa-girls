@@ -13,6 +13,7 @@
 
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import { Brand } from '../constants/brand';
 
 const TOKEN_KEY = 'midway_session_token';
 
@@ -176,14 +177,52 @@ export interface ResultsPayload {
   results: SubjectResult[];
 }
 
-export async function signIn(email: string, password: string): Promise<Profile> {
+/**
+ * Sign in.
+ *
+ * `identifier` is an email address or a phone number — most families here
+ * have the second and not the first. The school is sent with it because a
+ * phone number is unique only within one school.
+ */
+export async function signIn(identifier: string, password: string): Promise<Profile> {
   const { token } = await request<{ token: string }>('/api/auth/login', {
     method: 'POST',
-    body: { email, password },
+    body: { email: identifier, password, school: Brand.slug },
     auth: false,
   });
   await setToken(token);
   return getProfile();
+}
+
+/**
+ * Turning the school's printed slip into an account.
+ *
+ * The parent types the registration number and the code from the slip and
+ * chooses a password. The server decides everything else — which child,
+ * which school, whether the code is still good.
+ */
+export async function activate(input: {
+  registrationNo: string;
+  code: string;
+  password: string;
+  displayName?: string;
+  phone?: string;
+}): Promise<Profile> {
+  const { token } = await request<{ token: string }>('/api/auth/activate', {
+    method: 'POST',
+    body: { ...input, school: Brand.slug },
+    auth: false,
+  });
+  await setToken(token);
+  return getProfile();
+}
+
+/** A second slip, for a second daughter, on the same account. */
+export function linkChild(registrationNo: string, code: string) {
+  return request<{ children: Child[] }>('/api/children/link', {
+    method: 'POST',
+    body: { registrationNo, code },
+  });
 }
 
 export async function signOut(): Promise<void> {
