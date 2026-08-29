@@ -117,6 +117,7 @@ export default function ActivateScreen() {
             >
               <TextInput
                 style={[styles.input, { color: colors.text }]}
+                testID="reg-no"
                 placeholder="As printed on the slip"
                 placeholderTextColor={colors.textSecondary + '80'}
                 value={registrationNo}
@@ -139,6 +140,7 @@ export default function ActivateScreen() {
                 // Wide and spaced, because it is copied character by
                 // character off paper.
                 style={[styles.input, styles.codeInput, { color: colors.text }]}
+                testID="code"
                 placeholder="ABC-DEF"
                 placeholderTextColor={colors.textSecondary + '80'}
                 value={code}
@@ -160,6 +162,7 @@ export default function ActivateScreen() {
             >
               <TextInput
                 style={[styles.input, { color: colors.text }]}
+                testID="new-password"
                 placeholder="At least 8 characters"
                 placeholderTextColor={colors.textSecondary + '80'}
                 value={password}
@@ -207,6 +210,7 @@ export default function ActivateScreen() {
           </View>
 
           <TouchableOpacity
+            testID="activate"
             style={[styles.primaryBtn, { backgroundColor: colors.primary }]}
             onPress={handleActivate}
             disabled={loading}

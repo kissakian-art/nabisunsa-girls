@@ -1,201 +1,196 @@
-import { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, ActivityIndicator, useColorScheme, Platform, Alert } from 'react-native';
+/**
+ * The full report card for one child and one term.
+ *
+ * Everything comes from `term_results` on the server, which by construction
+ * only ever holds marks the school has released — so a card here can never
+ * show a mark the school has not published, and the app has no filter to
+ * forget.
+ *
+ * A parent can look at an earlier term as well as this one, because "is she
+ * improving" is the question behind most of these visits.
+ */
+
+import { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  useColorScheme,
+} from 'react-native';
 import { useRouter } from 'expo-router';
-import { auth, db, isMockMode } from '../services/firebase';
-import { getUserProfile } from '../services/db/users';
-import { getStudentMarksForTerm } from '../services/db/marks';
-import { User, Marks, Subject } from '../types';
-import { Colors, Spacing, MaxContentWidth } from '../constants/theme';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { collection, getDocs } from 'firebase/firestore';
+import { Colors, MaxContentWidth, Spacing } from '../constants/theme';
+import { useSession } from '../services/session';
+import { getResults, type ResultsPayload } from '../services/api';
 
 export default function ReportCardScreen() {
   const router = useRouter();
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+  const { profile, activeChild } = useSession();
 
+  const [termId, setTermId] = useState<number | undefined>(undefined);
+  const [payload, setPayload] = useState<ResultsPayload | null>(null);
   const [loading, setLoading] = useState(true);
-  const [userProfile, setUserProfile] = useState<User | null>(null);
-  const [marks, setMarks] = useState<Marks[]>([]);
-  const [subjectsList, setSubjectsList] = useState<Subject[]>([]);
-  const [exporting, setExporting] = useState(false);
+  const [error, setError] = useState('');
+
+  const load = useCallback(async () => {
+    if (!activeChild) return;
+    setLoading(true);
+    setError('');
+    try {
+      setPayload(await getResults({ studentId: activeChild.id, termId }));
+    } catch (e: any) {
+      setError(e?.message || 'Could not load the report card.');
+    } finally {
+      setLoading(false);
+    }
+  }, [activeChild, termId]);
 
   useEffect(() => {
-    async function loadReportDetails() {
-      const currentUser = auth.currentUser;
-      if (!currentUser) return;
+    load();
+  }, [load]);
 
-      try {
-        const profile = await getUserProfile(currentUser.uid);
-        setUserProfile(profile);
-
-        if (profile) {
-          const studentMarks = await getStudentMarksForTerm(currentUser.uid, '2026_term1');
-          setMarks(studentMarks);
-
-          if (isMockMode) {
-            const { DEFAULT_SUBJECTS } = require('../scripts/seedData');
-            setSubjectsList(DEFAULT_SUBJECTS);
-          } else {
-            const subSnap = await getDocs(collection(db, 'subjects'));
-            const allSubs = subSnap.docs.map(d => d.data() as Subject);
-            setSubjectsList(allSubs);
-          }
-        }
-      } catch (e) {
-        console.error('Error loading report card:', e);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadReportDetails();
-  }, []);
-
-  // Simulates creating and opening a share dialog for the PDF report card
-  const handleExportPDF = () => {
-    if (exporting) return;
-    setExporting(true);
-
-    setTimeout(() => {
-      setExporting(false);
-      const msg = `Academic Report Card for ${userProfile?.displayName || 'Student'} (Term 1) compiled successfully. Ready for sharing / printing!`;
-      if (Platform.OS === 'web') {
-        alert(msg);
-      } else {
-        Alert.alert('Report Card PDF Exported', msg, [{ text: 'Close Portal' }]);
-      }
-    }, 1500);
-  };
-
-  const getSubjectName = (subId: string) => {
-    const sub = subjectsList.find(s => s.id === subId);
-    return sub ? sub.name : subId.replace('a_', '').replace('o_', '').toUpperCase();
-  };
-
-  if (loading) {
-    return (
-      <View style={[styles.loading, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.gold} />
-      </View>
-    );
-  }
+  const released = payload?.results.filter((r) => r.finalScore != null) ?? [];
+  const average =
+    released.length > 0
+      ? released.reduce((sum, r) => sum + (r.finalScore ?? 0), 0) / released.length
+      : null;
 
   return (
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
 
-      {/* Nav Bar */}
-      <View style={styles.navBar}>
-        <TouchableOpacity style={[styles.backBtn, { borderColor: colors.gold }]} onPress={() => router.back()}>
-          <FontAwesome5 name="arrow-left" size={14} color={colors.gold} />
+      <View style={styles.inner}>
+        <TouchableOpacity testID="back" onPress={() => router.back()} style={styles.back}>
+          <FontAwesome5 name="chevron-left" size={13} color={colors.primary} />
+          <Text style={[styles.backText, { color: colors.primary }]}>Back</Text>
         </TouchableOpacity>
-        <Text style={[styles.navTitle, { color: colors.text }]}>Academic Transcript</Text>
-        <View style={{ width: 40 }} />
+
+        <View
+          testID="report-card-screen"
+          style={[
+            styles.card,
+            { backgroundColor: colors.backgroundElement, borderColor: colors.gold },
+          ]}
+        >
+          <Text style={[styles.school, { color: colors.text }]}>
+            {profile?.school?.name?.toUpperCase() ?? ''}
+          </Text>
+          {profile?.school?.motto ? (
+            <Text style={[styles.motto, { color: colors.textSecondary }]}>
+              {profile.school.motto}
+            </Text>
+          ) : null}
+          <View style={[styles.rule, { backgroundColor: colors.gold }]} />
+
+          <Text style={[styles.student, { color: colors.text }]}>
+            {activeChild ? `${activeChild.firstName} ${activeChild.lastName}` : ''}
+          </Text>
+          <Text style={[styles.studentSub, { color: colors.textSecondary }]}>
+            {activeChild?.className}
+            {activeChild?.streamName ? ` ${activeChild.streamName}` : ''} ·{' '}
+            {activeChild?.registrationNo}
+          </Text>
+
+          {/* Terms, so a parent can compare with the last one. */}
+          {(payload?.terms?.length ?? 0) > 1 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.termRow}>
+              {payload?.terms.map((term) => {
+                const active = term.id === payload.term?.id;
+                return (
+                  <TouchableOpacity
+                    key={term.id}
+                    onPress={() => setTermId(term.id)}
+                    style={[
+                      styles.termChip,
+                      {
+                        borderColor: active ? colors.gold : colors.textSecondary + '40',
+                        backgroundColor: active ? colors.champagne : 'transparent',
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.termChipText,
+                        { color: active ? colors.text : colors.textSecondary },
+                      ]}
+                    >
+                      {term.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          )}
+
+          {loading ? (
+            <ActivityIndicator color={colors.gold} style={{ marginVertical: Spacing.five }} />
+          ) : error ? (
+            <Text style={[styles.empty, { color: colors.error }]}>{error}</Text>
+          ) : released.length === 0 ? (
+            // An honest empty card, not a missing one: a parent must be able
+            // to tell "nothing released yet" from "the app is broken".
+            <Text style={[styles.empty, { color: colors.textSecondary }]}>
+              No results have been released for {payload?.term?.name ?? 'this term'} yet.
+            </Text>
+          ) : (
+            <>
+              <View style={styles.tableHead}>
+                <Text style={[styles.thSubject, { color: colors.textSecondary }]}>Subject</Text>
+                <Text style={[styles.thNum, { color: colors.textSecondary }]}>C/W</Text>
+                <Text style={[styles.thNum, { color: colors.textSecondary }]}>Exam</Text>
+                <Text style={[styles.thNum, { color: colors.textSecondary }]}>Final</Text>
+                <Text style={[styles.thGrade, { color: colors.textSecondary }]}>Grade</Text>
+              </View>
+
+              {released.map((row) => (
+                <View
+                  key={row.subjectId}
+                  style={[styles.tr, { borderTopColor: colors.textSecondary + '20' }]}
+                >
+                  <View style={styles.tdSubject}>
+                    <Text style={[styles.subjectName, { color: colors.text }]}>
+                      {row.subjectName}
+                    </Text>
+                    {row.position != null && (
+                      <Text style={[styles.subjectSub, { color: colors.textSecondary }]}>
+                        Position {row.position} of {row.groupSize}
+                      </Text>
+                    )}
+                  </View>
+                  <Text style={[styles.tdNum, { color: colors.textSecondary }]}>
+                    {row.caScore ?? '—'}
+                  </Text>
+                  <Text style={[styles.tdNum, { color: colors.textSecondary }]}>
+                    {row.eotScore ?? '—'}
+                  </Text>
+                  <Text style={[styles.tdNum, styles.strong, { color: colors.text }]}>
+                    {row.finalScore}
+                  </Text>
+                  <Text style={[styles.tdGrade, { color: colors.text }]}>{row.grade ?? '—'}</Text>
+                </View>
+              ))}
+
+              <View style={[styles.totalRow, { borderTopColor: colors.gold }]}>
+                <Text style={[styles.totalLabel, { color: colors.text }]}>Average</Text>
+                <Text style={[styles.totalValue, { color: colors.text }]}>
+                  {average?.toFixed(1)}
+                </Text>
+              </View>
+            </>
+          )}
+        </View>
+
+        <Text style={[styles.footnote, { color: colors.textSecondary }]}>
+          This is what the school has released so far. A printed report card
+          signed by the school remains the official record.
+        </Text>
       </View>
-
-      {/* Report Card Frame (Styled like a formal paper crest transcript) */}
-      <View style={[styles.transcriptFrame, { backgroundColor: colors.backgroundElement, borderColor: colors.gold }]}>
-        
-        {/* Crest Title */}
-        <View style={styles.crestHeader}>
-          <FontAwesome5 name="medal" size={24} color={colors.gold} style={{ marginBottom: Spacing.one }} />
-          <Text style={[styles.crestSchool, { color: colors.text }]}>NABISUNSA GIRLS' SECONDARY SCHOOL</Text>
-          <Text style={[styles.crestTerm, { color: colors.textSecondary }]}>OFFICIAL ACADEMIC REPORT CARD • TERM 1</Text>
-          <View style={[styles.crestDivider, { backgroundColor: colors.gold }]} />
-        </View>
-
-        {/* Student metadata */}
-        <View style={styles.metaGrid}>
-          <View style={styles.metaItem}>
-            <Text style={[styles.metaLabel, { color: colors.textSecondary }]}>STUDENT NAME:</Text>
-            <Text style={[styles.metaVal, { color: colors.text }]}>{userProfile?.displayName}</Text>
-          </View>
-          <View style={styles.metaItem}>
-            <Text style={[styles.metaLabel, { color: colors.textSecondary }]}>REGISTRATION NO:</Text>
-            <Text style={[styles.metaVal, { color: colors.text }]}>{userProfile?.registrationNumber}</Text>
-          </View>
-          <View style={styles.metaItem}>
-            <Text style={[styles.metaLabel, { color: colors.textSecondary }]}>CLASS STREAM:</Text>
-            <Text style={[styles.metaVal, { color: colors.text }]}>{userProfile?.classId} {userProfile?.stream}</Text>
-          </View>
-          <View style={styles.metaItem}>
-            <Text style={[styles.metaLabel, { color: colors.textSecondary }]}>CURRICULUM LEVEL:</Text>
-            <Text style={[styles.metaVal, { color: colors.text }]}>{userProfile?.level}</Text>
-          </View>
-        </View>
-
-        {/* Dynamic Grades Table Grid */}
-        <View style={styles.table}>
-          <View style={[styles.tableHeader, { backgroundColor: colors.primary }]}>
-            <Text style={[styles.th, styles.colSub]}>Subject</Text>
-            <Text style={[styles.th, styles.colMark]}>BOT</Text>
-            <Text style={[styles.th, styles.colMark]}>Mid</Text>
-            <Text style={[styles.th, styles.colMark]}>EOT</Text>
-            <Text style={[styles.th, styles.colMark]}>CA</Text>
-            <Text style={[styles.th, styles.colTotal]}>Tally</Text>
-            <Text style={[styles.th, styles.colGrade]}>Grade</Text>
-          </View>
-
-          {marks.map((row, idx) => (
-            <View key={idx} style={[styles.tableRow, { borderBottomColor: colors.gold + '20' }]}>
-              <Text style={[styles.td, styles.colSub, { color: colors.text }]} numberOfLines={1}>
-                {getSubjectName(row.subjectId)}
-              </Text>
-              <Text style={[styles.td, styles.colMark, { color: colors.textSecondary }]}>
-                {row.beginningOfTerm ?? '-'}
-              </Text>
-              <Text style={[styles.td, styles.colMark, { color: colors.textSecondary }]}>
-                {row.midTerm ?? '-'}
-              </Text>
-              <Text style={[styles.td, styles.colMark, { color: colors.textSecondary }]}>
-                {row.endOfTerm ?? '-'}
-              </Text>
-              <Text style={[styles.td, styles.colMark, { color: colors.textSecondary }]}>
-                {row.continuousAssessment ?? '-'}
-              </Text>
-              <Text style={[styles.td, styles.colTotal, { color: colors.text, fontWeight: '700' }]}>
-                {row.finalWeightScore?.toFixed(0)}%
-              </Text>
-              <Text style={[styles.td, styles.colGrade, { color: colors.gold, fontWeight: '800' }]}>
-                {row.finalGrade}
-              </Text>
-            </View>
-          ))}
-        </View>
-
-        {/* Signatures Panel */}
-        <View style={styles.signaturesBar}>
-          <View style={styles.sigBlock}>
-            <Text style={[styles.sigLine, { color: colors.textSecondary }]}>________________________</Text>
-            <Text style={[styles.sigTitle, { color: colors.text }]}>Okello James</Text>
-            <Text style={[styles.sigRole, { color: colors.textSecondary }]}>Classroom Tutor</Text>
-          </View>
-
-          <View style={styles.sigBlock}>
-            <Text style={[styles.sigLine, { color: colors.textSecondary }]}>________________________</Text>
-            <Text style={[styles.sigTitle, { color: colors.text }]}>Hajati Zaminah</Text>
-            <Text style={[styles.sigRole, { color: colors.textSecondary }]}>Headmistress</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Export Action */}
-      <TouchableOpacity 
-        style={[styles.exportBtn, { backgroundColor: colors.primary }]}
-        onPress={handleExportPDF}
-        disabled={exporting}
-      >
-        {exporting ? (
-          <ActivityIndicator color="#FFFFFF" size="small" />
-        ) : (
-          <>
-            <FontAwesome5 name="file-pdf" size={14} color="#FFFFFF" style={{ marginRight: 8 }} />
-            <Text style={styles.exportBtnText}>Share / Export Report Card PDF</Text>
-          </>
-        )}
-      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -203,170 +198,54 @@ export default function ReportCardScreen() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Platform.OS === 'ios' ? 60 : 30,
-    paddingBottom: Spacing.six,
-    alignSelf: 'center',
-    width: '100%',
-    maxWidth: MaxContentWidth,
-  },
-  loading: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  navBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.four,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  navTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  transcriptFrame: {
-    borderWidth: 1,
-    borderRadius: Spacing.three,
-    paddingVertical: Spacing.five,
+    paddingVertical: Spacing.four,
     paddingHorizontal: Spacing.three,
-    marginBottom: Spacing.four,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  crestHeader: {
     alignItems: 'center',
-    marginBottom: Spacing.four,
   },
-  crestSchool: {
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: 1.0,
-    textAlign: 'center',
-    marginBottom: 4,
+  inner: { width: '100%', maxWidth: MaxContentWidth },
+  back: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: Spacing.three },
+  backText: { fontSize: 14, fontWeight: '600' },
+  card: { borderWidth: 1, borderRadius: Spacing.three, padding: Spacing.four },
+  school: { fontSize: 14, fontWeight: '800', letterSpacing: 0.8, textAlign: 'center' },
+  motto: { fontSize: 11, fontStyle: 'italic', textAlign: 'center', marginTop: 2 },
+  rule: { height: 1.5, width: 70, alignSelf: 'center', marginVertical: Spacing.three },
+  student: { fontSize: 18, fontWeight: '700', textAlign: 'center' },
+  studentSub: { fontSize: 12, textAlign: 'center', marginTop: 2 },
+  termRow: { marginTop: Spacing.three, marginBottom: Spacing.two },
+  termChip: {
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingVertical: 5,
+    paddingHorizontal: Spacing.three,
+    marginRight: Spacing.two,
   },
-  crestTerm: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    textAlign: 'center',
-  },
-  crestDivider: {
-    width: 60,
-    height: 1.5,
+  termChipText: { fontSize: 12, fontWeight: '600' },
+  tableHead: { flexDirection: 'row', marginTop: Spacing.three, paddingBottom: Spacing.one },
+  thSubject: { flex: 1, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
+  thNum: { width: 42, fontSize: 10, textAlign: 'right', textTransform: 'uppercase' },
+  thGrade: { width: 46, fontSize: 10, textAlign: 'right', textTransform: 'uppercase' },
+  tr: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.two, borderTopWidth: 1 },
+  tdSubject: { flex: 1, paddingRight: Spacing.two },
+  subjectName: { fontSize: 14, fontWeight: '600' },
+  subjectSub: { fontSize: 11, marginTop: 2 },
+  tdNum: { width: 42, fontSize: 13, textAlign: 'right' },
+  tdGrade: { width: 46, fontSize: 14, fontWeight: '800', textAlign: 'right' },
+  strong: { fontWeight: '700' },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderTopWidth: 1.5,
     marginTop: Spacing.two,
+    paddingTop: Spacing.two,
   },
-  metaGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    backgroundColor: '#0F204205',
-    borderRadius: Spacing.two,
-    padding: Spacing.three,
-    marginBottom: Spacing.four,
-    gap: Spacing.three,
-  },
-  metaItem: {
-    width: '45%',
-    flexGrow: 1,
-  },
-  metaLabel: {
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  metaVal: {
-    fontSize: 13,
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  table: {
-    width: '100%',
-    marginBottom: Spacing.five,
-  },
-  tableHeader: {
-    flexDirection: 'row',
-    height: 32,
-    alignItems: 'center',
-    paddingHorizontal: Spacing.one,
-  },
-  th: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-    textAlign: 'center',
-  },
-  tableRow: {
-    flexDirection: 'row',
-    height: 38,
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    paddingHorizontal: Spacing.one,
-  },
-  td: {
+  totalLabel: { fontSize: 14, fontWeight: '700' },
+  totalValue: { fontSize: 18, fontWeight: '800' },
+  empty: { fontSize: 13, textAlign: 'center', marginVertical: Spacing.five, lineHeight: 20 },
+  footnote: {
     fontSize: 11,
     textAlign: 'center',
-  },
-  colSub: {
-    flex: 2,
-    textAlign: 'left',
-    paddingLeft: Spacing.one,
-  },
-  colMark: {
-    flex: 1,
-  },
-  colTotal: {
-    flex: 1.2,
-  },
-  colGrade: {
-    flex: 1,
-  },
-  signaturesBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
     marginTop: Spacing.three,
-    paddingTop: Spacing.three,
-  },
-  sigBlock: {
-    alignItems: 'center',
-  },
-  sigLine: {
-    fontSize: 10,
-    marginBottom: 4,
-  },
-  sigTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  sigRole: {
-    fontSize: 10,
-    marginTop: 2,
-  },
-  exportBtn: {
-    flexDirection: 'row',
-    height: 48,
-    borderRadius: Spacing.two,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowOpacity: 0.1,
-    elevation: 2,
-  },
-  exportBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    marginBottom: Spacing.four,
+    lineHeight: 16,
   },
 });

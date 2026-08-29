@@ -259,10 +259,29 @@ to shared storage if the portal is ever run as more than one).
 ## Running the browser suites
 
     npm run smoke          portal: marks entry, verify, release
+    npm run smoke:app      the family app itself, against this server
     npm run smoke:families access slips for parents
     npm run smoke:api      mobile API and the advisor
     npm run smoke:setup    onboarding a school from nothing
     npm run smoke:reports  report cards and print output
+
+`smoke:app` needs the Expo app running as well as the portal:
+
+```bash
+EXPO_OFFLINE=1 EXPO_PUBLIC_API_BASE_URL=http://127.0.0.1:4500 \
+  EXPO_PUBLIC_SCHOOL_SLUG=nabisunsa-girls npx expo start --web --offline
+```
+
+It drives the web build, which is not what ships, but it is the same React
+tree the phone runs — so it catches what matters: a parent signs in, sees her
+own child's released marks and not the unreleased ones, switches to her
+second daughter, opens the report card, and turns a printed slip into an
+account. It found two real bugs on its first run, including a parent left
+stranded on the activation screen after successfully activating.
+
+The browser needs `--disable-web-security` for it, because the app is served
+from :8081 and the API from :4500. That is a browser concern only: a native
+app has no origin and no preflight, so the API is not loosened for it.
 
 Each reseeds the demo school first. They share a database and change it as
 they go — the portal suite releases Mathematics — so without that they pass

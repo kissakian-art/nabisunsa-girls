@@ -46,7 +46,6 @@ function RootNavigator() {
     if (loading) return;
 
     const section = segments[0];
-    const inApp = section === '(tabs)';
     const inLockScreen = section === 'lock';
     const signedIn = !!profile;
 
@@ -68,13 +67,16 @@ function RootNavigator() {
       return;
     }
 
-    // Signed in: the login screen is not somewhere to go back to.
-    if (!section) router.replace('/(tabs)');
-    else if (!inApp && (section === 'admin' || section === 'developer')) {
-      // Staff tools are the web portal's job. Nothing in this app should
-      // reach them, including a deep link.
-      router.replace('/(tabs)');
-    }
+    // Signed in: neither of the ways in is somewhere to go back to. The
+    // activation screen matters as much as the login screen here — a parent
+    // who has just typed her code off a printed slip is signed in, and
+    // leaving her looking at the form she just submitted reads as a failure.
+    //
+    // There is nothing else to guard. The staff screens that used to ship
+    // inside this app — marks entry, student registration, the developer
+    // console — are gone: that work belongs in the web portal, and an
+    // administrator's tools have no business in a parent's phone.
+    if (!section || section === 'activate') router.replace('/(tabs)');
   }, [loading, profile, locked, segments]);
 
   if (loading) {
@@ -94,10 +96,6 @@ function RootNavigator() {
         <Stack.Screen name="lock" />
         <Stack.Screen name="ai-chat" options={{ presentation: 'modal' }} />
         <Stack.Screen name="report-card" />
-        <Stack.Screen name="developer/index" />
-        <Stack.Screen name="admin/marks-entry" />
-        <Stack.Screen name="admin/post-assignment" />
-        <Stack.Screen name="admin/post-lesson" />
         <Stack.Screen name="course/[id]" />
         <Stack.Screen name="lessons/[id]" />
       </Stack>

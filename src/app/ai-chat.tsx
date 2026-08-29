@@ -1,13 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { StyleSheet, View, Text, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, useColorScheme, Platform, KeyboardAvoidingView } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { auth } from '../services/firebase';
-import { getUserProfile } from '../services/db/users';
-import { getStudentMarksForTerm } from '../services/db/marks';
-import { getCourses } from '../services/db/courses';
-import { getRecommendations, RecommendationResult } from '../services/careerAdvisor';
-import { User, Marks } from '../types';
 import { Colors, Spacing, MaxContentWidth } from '../constants/theme';
+import { useSession } from '../services/session';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { askAdvisor } from '../services/api';
@@ -27,113 +22,44 @@ export default function AiChatScreen() {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
 
-  const [loadingContext, setLoadingContext] = useState(true);
-  const [userProfile, setUserProfile] = useState<User | null>(null);
-  const [marks, setMarks] = useState<Marks[]>([]);
-  const [recommendations, setRecommendations] = useState<RecommendationResult[]>([]);
+  const { activeChild } = useSession();
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [sending, setSending] = useState(false);
 
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // System Prompt for context injection
-  const [systemPrompt, setSystemPrompt] = useState('');
-
+  // No context is assembled here any more.
+  //
+  // This screen used to build the advisor's entire system prompt on the
+  // phone — the student's grades, her combination, and a hard-coded table of
+  // university cut-off points. Two things were wrong with that. The cut-offs
+  // move every year and were quietly going stale in an app nobody updates,
+  // and anything the app can compose, the app can be made to compose
+  // differently: a modified client could claim to be another student.
+  //
+  // Both now live on the server, which builds the prompt from the child's own
+  // released results. The app sends a question and nothing else.
   useEffect(() => {
-    async function loadStudentContext() {
-      const currentUser = auth.currentUser;
-      if (!currentUser) return;
-
-      try {
-        const profile = await getUserProfile(currentUser.uid);
-        setUserProfile(profile);
-
-        if (profile) {
-          const studentMarks = await getStudentMarksForTerm(currentUser.uid, '2026_term1');
-          setMarks(studentMarks);
-
-          const coursesList = await getCourses();
-          
-          let matches: RecommendationResult[] = [];
-          
-          if (profile.level === 'A-Level') {
-            const subjectsMap = studentMarks.reduce((acc, curr) => {
-              acc[curr.subjectId] = curr.finalGrade || 'F';
-              return acc;
-            }, {} as Record<string, string>);
-
-            const uaceGrades = {
-              subject1: { id: (profile.subjects || [])[0] || 'a_mathematics', grade: (subjectsMap[(profile.subjects || [])[0]] || 'A') as any },
-              subject2: { id: (profile.subjects || [])[1] || 'a_physics', grade: (subjectsMap[(profile.subjects || [])[1]] || 'B') as any },
-              subject3: { id: (profile.subjects || [])[2] || 'a_chemistry', grade: (subjectsMap[(profile.subjects || [])[2]] || 'C') as any },
-              generalPaperPassed: true,
-              subsidiaryPassed: true
-            };
-
-            const uceGradesList = Object.entries(profile.uceGrades || {}).map(([subId, gr]) => ({
-              subjectId: subId,
-              subjectName: subId.replace('o_', '').toUpperCase(),
-              grade: gr
-            }));
-
-            matches = getRecommendations(uceGradesList, uaceGrades, coursesList);
-            setRecommendations(matches);
-          }
-
-          // Compile detailed text context to inject as system prompt for Gemini
-          const gradesSummary = studentMarks.map(m => `${m.subjectId.replace('o_', '').replace('a_', '').toUpperCase()}: ${m.finalGrade} (${m.finalWeightScore}%)`).join(', ');
-          const bestMatches = matches.filter(m => m.eligibility === 'High').map(m => `${m.course.name} at ${m.course.institution}`).slice(0, 3).join(', ');
-
-          const prompt = `
-            You are a senior, highly prestigious academic and career advisor at Nabisunsa Girls' Secondary School in Uganda.
-            You are advising a student and her parent.
-            Student Name: ${profile.displayName}
-            Current Class: ${profile.classId} (${profile.level})
-            Term 1 Grades: [${gradesSummary}]
-            Current A-Level Combination: ${profile.aLevelCombination || 'None (O-Level Student)'}
-            Primary University Targets: [${bestMatches || 'Skills certificates recommended'}]
-
-            Ugandan University Admissions Rules Reference:
-            1. Makerere University (MUK) & Kyambogo University (KYU) Cut-off Lookups:
-               - Admissions are strictly points-based (standard JAB weights).
-               - Reference Cut-offs: Makerere Medicine (MAM): 49.7, Pharmacy (PHA): 48.9, Civil Eng (CIV): 49.7, Computer Science (CSC): 43.1. Kyambogo Electrical (BEL): 47.4.
-            2. Direct Entry Universities (MUST, Gulu, Busitema, KIU, UCU, UMU, IUIU, IUEA):
-               - These universities DO NOT use a points-based cut-off system for direct entries.
-               - Instead, they use a Direct Entry System requiring:
-                 - Minimum of 2 Principal Passes at UACE (A-Level, Grades A, B, C, D, or E).
-                 - Minimum of 5 passes at UCE (O-Level, Grades 1 to 8).
-               - If a student meets these UACE and UCE pass conditions, advise them and their parent that they qualify for Direct Entry into these premium universities!
-
-            Your tone must be exceptionally polite, formal, corporate, encouraging, and highly professional.
-            Always focus recommendations on the Ugandan higher education system (e.g. Makerere University, Kyambogo, MUBS) or popular vocational centers (Nakawa Vocational, Jinja Catering).
-            Acknowledge Nabisunsa Girls' Secondary School's premium standard in all interactions.
-          `;
-          setSystemPrompt(prompt);
-
-          // Initial Welcome message
-          const welcomeMessage = `Welcome to the Nabisunsa Career Advisory Desk. I am your academic counselor. Looking at your S5 Term 1 grades, you have outstanding performance in sciences. How best can I assist you and your parent today?`;
-          
-          setMessages([
-            { id: '1', sender: 'ai', text: welcomeMessage, timestamp: new Date() }
-          ]);
-        }
-      } catch (e) {
-        console.error('Error loading student context for AI:', e);
-      } finally {
-        setLoadingContext(false);
-      }
-    }
-
-    loadStudentContext();
-  }, []);
+    setMessages([
+      {
+        id: '1',
+        sender: 'ai',
+        text: activeChild
+          ? `Hello. I can talk about ${activeChild.firstName}'s results — how she is doing, where she is improving, and what to think about next. What would you like to know?`
+          : 'Hello. What would you like to know?',
+        timestamp: new Date(),
+      },
+    ]);
+  }, [activeChild]);
 
   // Handle trigger of initialPrompt if passed from course details screen
   useEffect(() => {
-    if (!loadingContext && initialPrompt && messages.length === 1) {
+    if (initialPrompt && messages.length === 1) {
       sendMessage(initialPrompt);
     }
-  }, [loadingContext, initialPrompt]);
+  }, [initialPrompt, messages.length]);
 
   // Unified sending mechanism
   const sendMessage = async (textToSend: string) => {
@@ -164,7 +90,9 @@ export default function AiChatScreen() {
         .slice(1) // the opening greeting is ours, not part of the conversation
         .map(m => ({ role: m.sender === 'user' ? 'user' as const : 'model' as const, text: m.text }));
 
-      const { reply } = await askAdvisor(textToSend, history);
+      // The child is named so a parent with two daughters gets an answer
+      // about the one on screen. The server still checks that she is theirs.
+      const { reply } = await askAdvisor(textToSend, history, activeChild?.id);
 
       setMessages(prev => [...prev, {
         id: Math.random().toString(),
@@ -187,14 +115,6 @@ export default function AiChatScreen() {
     }
   };
 
-  if (loadingContext) {
-    return (
-      <View style={[styles.loading, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.gold} />
-      </View>
-    );
-  }
-
   return (
     <KeyboardAvoidingView 
       style={{ flex: 1, backgroundColor: colors.background }}
@@ -209,8 +129,10 @@ export default function AiChatScreen() {
           <FontAwesome5 name="arrow-left" size={14} color={colors.gold} />
         </TouchableOpacity>
         <View style={styles.navTitleWrapper}>
-          <Text style={[styles.navTitle, { color: colors.text }]}>Academic Advisor Desk</Text>
-          <Text style={[styles.navSub, { color: colors.gold }]}>Powered by Gemini AI Studio</Text>
+          <Text style={[styles.navTitle, { color: colors.text }]}>Academic advisor</Text>
+          <Text style={[styles.navSub, { color: colors.gold }]}>
+            {activeChild ? `About ${activeChild.firstName}` : ''}
+          </Text>
         </View>
         <View style={{ width: 40 }} />
       </View>
@@ -222,23 +144,23 @@ export default function AiChatScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsScroll}>
             <TouchableOpacity 
               style={[styles.suggestChip, { backgroundColor: colors.backgroundElement, borderColor: colors.gold }]}
-              onPress={() => sendMessage('What engineering courses do I qualify for at Makerere?')}
+              onPress={() => sendMessage('Which subjects should she focus on this term?')}
             >
-              <Text style={[styles.chipText, { color: colors.text }]}>Engineering cutoffs?</Text>
+              <Text style={[styles.chipText, { color: colors.text }]}>Where to focus?</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
               style={[styles.suggestChip, { backgroundColor: colors.backgroundElement, borderColor: colors.gold }]}
-              onPress={() => sendMessage('Tell me about the holiday vacation design courses.')}
+              onPress={() => sendMessage('How has she improved compared with last term?')}
             >
-              <Text style={[styles.chipText, { color: colors.text }]}>Holiday vacation crafts?</Text>
+              <Text style={[styles.chipText, { color: colors.text }]}>Is she improving?</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
               style={[styles.suggestChip, { backgroundColor: colors.backgroundElement, borderColor: colors.gold }]}
-              onPress={() => sendMessage('Can I do computer science with my current marks?')}
+              onPress={() => sendMessage('What kind of courses suit her strengths?')}
             >
-              <Text style={[styles.chipText, { color: colors.text }]}>Computer Science fit?</Text>
+              <Text style={[styles.chipText, { color: colors.text }]}>What suits her?</Text>
             </TouchableOpacity>
           </ScrollView>
         </View>

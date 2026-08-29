@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { initializeAuth } from 'firebase/auth';
-// @ts-ignore
+import { getAuth, initializeAuth } from 'firebase/auth';
+// @ts-ignore — present in the native build of firebase/auth only.
 import { getReactNativePersistence } from 'firebase/auth';
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
@@ -31,10 +31,17 @@ console.log('[Firebase Diagnostics] Loaded Config:', {
   isMockMode: isMockMode || firebaseConfig.apiKey === 'mock-api-key-nabisunsa'
 });
 
-// Initialize Auth with AsyncStorage for robust React Native persistence
-const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(AsyncStorage),
-});
+// Auth, only far enough to keep the remaining Firebase screens importable.
+//
+// `getReactNativePersistence` does not exist in the web build of
+// firebase/auth, and calling it there crashed the whole bundle — every
+// screen, including the ones that no longer touch Firebase at all. Nothing
+// signs into Firebase Auth any more (the session is a token from the
+// school's own server), so this only has to construct without throwing.
+const auth =
+  typeof getReactNativePersistence === 'function'
+    ? initializeAuth(app, { persistence: getReactNativePersistence(AsyncStorage) })
+    : getAuth(app);
 
 // Initialize Firestore with robust local caching for offline capabilities 
 // (essential to make students/parents see marks even without internet!)

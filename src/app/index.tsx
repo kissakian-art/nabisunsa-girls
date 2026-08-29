@@ -173,6 +173,7 @@ export default function LoginScreen() {
           </View>
 
           <TouchableOpacity
+            testID="sign-in"
             style={[styles.loginBtn, { backgroundColor: colors.primary }]}
             onPress={handleLogin}
             disabled={loading}
@@ -187,6 +188,7 @@ export default function LoginScreen() {
           {/* First time here: the school hands out a printed slip, and this
               is the only route from that piece of paper to an account. */}
           <TouchableOpacity
+            testID="go-activate"
             style={[styles.secondaryBtn, { borderColor: colors.gold }]}
             onPress={() => router.push('/activate')}
           >
