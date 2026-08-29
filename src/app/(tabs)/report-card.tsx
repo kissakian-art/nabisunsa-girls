@@ -23,9 +23,9 @@ import {
 import { useRouter } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { Colors, MaxContentWidth, Spacing } from '../constants/theme';
-import { useSession } from '../services/session';
-import { getResults, type ResultsPayload } from '../services/api';
+import { Colors, MaxContentWidth, Spacing } from '../../constants/theme';
+import { useSession } from '../../services/session';
+import { getResults, type ResultsPayload } from '../../services/api';
 
 export default function ReportCardScreen() {
   const router = useRouter();

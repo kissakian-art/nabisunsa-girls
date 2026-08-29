@@ -1,11 +1,11 @@
 import { useEffect, useState, useRef } from 'react';
 import { StyleSheet, View, Text, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, useColorScheme, Platform, KeyboardAvoidingView } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Colors, Spacing, MaxContentWidth } from '../constants/theme';
-import { useSession } from '../services/session';
+import { Colors, Spacing, MaxContentWidth } from '../../constants/theme';
+import { useSession } from '../../services/session';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { askAdvisor } from '../services/api';
+import { askAdvisor } from '../../services/api';
 
 interface ChatMessage {
   id: string;

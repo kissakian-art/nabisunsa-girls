@@ -1,8 +1,21 @@
 import { Tabs } from 'expo-router';
-import { useColorScheme, Platform } from 'react-native';
-import { Colors } from '../../constants/theme';
+import { Platform, useColorScheme } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { Colors } from '../../constants/theme';
 
+/**
+ * Three tabs, which is the whole app.
+ *
+ * It used to be four — Billboard, Career JAB, Classroom, Messages — over a
+ * learning management system: teachers posting lessons and assignments,
+ * students submitting them. That was cut. It contradicted the one promise
+ * the school is actually buying ("your teachers do nothing differently"),
+ * and it had already stopped working: those screens read the signed-in user
+ * from Firebase Auth, which nothing signs into any more.
+ *
+ * What is left is what a family opens the app for: how is she doing, the
+ * full card, and someone to ask.
+ */
 export default function TabLayout() {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
@@ -12,58 +25,40 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.gold,
-        tabBarInactiveTintColor: scheme === 'dark' ? '#8E9AA7' : '#5A6578',
+        tabBarInactiveTintColor: scheme === 'dark' ? '#8E9AA7' : '#B9C2CE',
         tabBarStyle: {
-          backgroundColor: scheme === 'dark' ? '#0E1B30' : '#0F2042', // Rich Navy
+          backgroundColor: scheme === 'dark' ? '#0E1B30' : '#0F2042',
           borderTopWidth: 1.5,
-          borderTopColor: colors.gold, // Gold divider
+          borderTopColor: colors.gold,
           height: Platform.OS === 'ios' ? 88 : 64,
           paddingBottom: Platform.OS === 'ios' ? 30 : 10,
           paddingTop: 10,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -3 },
-          shadowOpacity: 0.1,
-          shadowRadius: 5,
-          elevation: 8,
         },
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
-          letterSpacing: 0.3,
-        },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600', letterSpacing: 0.3 },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Billboard',
+          title: 'Home',
           tabBarIcon: ({ color, size }) => (
-            <FontAwesome5 name="chalkboard-teacher" size={size - 2} color={color} />
+            <FontAwesome5 name="home" size={size - 2} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="career"
+        name="report-card"
         options={{
-          title: 'Career JAB',
+          title: 'Report card',
           tabBarIcon: ({ color, size }) => (
-            <FontAwesome5 name="graduation-cap" size={size - 2} color={color} />
+            <FontAwesome5 name="file-alt" size={size - 2} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="classroom"
+        name="ai-chat"
         options={{
-          title: 'Classroom',
-          tabBarIcon: ({ color, size }) => (
-            <FontAwesome5 name="video" size={size - 2} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="chat"
-        options={{
-          title: 'Messages',
+          title: 'Advisor',
           tabBarIcon: ({ color, size }) => (
             <FontAwesome5 name="comments" size={size - 2} color={color} />
           ),

@@ -68,6 +68,10 @@ const check = (name, ok, detail = '') => {
   check('released subjects are listed', /Biology/.test(body || '') && /History/.test(body || ''));
   check('unreleased subjects are not', !/English Language/.test(body || ''),
     /English Language/.test(body || '') ? 'English leaked' : '');
+  check('the app is three tabs, not seven screens',
+    /Home/.test(body || '') && /Report card/.test(body || '') && /Advisor/.test(body || ''));
+  check('the learning-management tabs are gone',
+    !/Classroom/.test(body || '') && !/Career JAB/.test(body || ''));
   check('a parent with two daughters gets a picker',
     (await page.locator('text=Aisha').count()) > 0 && (await page.locator('text=Brenda').count()) > 0);
 

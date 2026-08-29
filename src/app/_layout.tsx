@@ -94,10 +94,6 @@ function RootNavigator() {
         <Stack.Screen name="index" />
         <Stack.Screen name="activate" />
         <Stack.Screen name="lock" />
-        <Stack.Screen name="ai-chat" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="report-card" />
-        <Stack.Screen name="course/[id]" />
-        <Stack.Screen name="lessons/[id]" />
       </Stack>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
     </ThemeProvider>

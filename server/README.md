@@ -146,6 +146,25 @@ no position rather than coming last.
 `node scripts/report-smoke.js` checks all of that in a browser and renders
 the print view to PDF to confirm it paginates one card per page.
 
+## The app
+
+Three screens, all reading from this server: what she is doing this term,
+the full report card, and the academic advisor. Nothing else — and nothing
+that asks a teacher to do anything.
+
+The app that this replaced also carried a learning management system: a
+Classroom tab, a Career tab, lesson pages, assignment posting. That was cut.
+It contradicted the promise the school is buying — "your teachers do nothing
+differently, they keep handing in paper" — and it was the fastest way for a
+head teacher to conclude the opposite. It had also stopped working: those
+screens identified the signed-in user through Firebase Auth, which nothing
+signs into any more.
+
+Firebase is gone from the app entirely. Authentication, marks, school data
+and the advisor all come from here. The one remaining Firebase dependency is
+outside the code: Android push is delivered through Firebase Cloud
+Messaging, so each branded build needs that school's `google-services.json`.
+
 ## Family accounts
 
 A parent cannot sign into the app until the school gives them a way in, and
