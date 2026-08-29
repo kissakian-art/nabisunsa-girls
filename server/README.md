@@ -125,6 +125,39 @@ Removing a tenant is an ordered operation, not `DELETE FROM schools`: see
 Use a `_dev` database name until the portal is deployed; nothing the live
 apps touch should be involved.
 
+## Notifications
+
+The proposal sells this as "a direct line to every parent's phone, with no
+cost per message" — the thing that replaces the SMS bill. Two events produce
+one:
+
+- **A marksheet is released.** Every family with a daughter in that class is
+  told, immediately, by `lib/marksheets.ts` after the release is saved.
+- **An announcement is sent.** `/announcements` — written as a draft, sent as
+  a separate act, because something on 900 phones cannot be recalled.
+
+**A notification never carries a mark, a grade, a position, or a child's
+name.** It appears on a lock screen, which is visible to whoever is holding
+the phone — a sibling, a boda rider, anyone in the room. "Chemistry results
+released" is the message; the mark itself is behind the password. The push
+suite asserts this rather than trusting it.
+
+**Sending can never fail the school's work.** The release is saved and the
+results recomputed first; the push is fired afterwards and its failure is
+logged, not raised. A DoS must never be unable to publish because a push
+service is down.
+
+Delivery is Expo's push service, which reaches Android through Firebase Cloud
+Messaging — so each branded build needs that school's `google-services.json`.
+That is the only thing Firebase is still used for.
+
+    npm run smoke:push
+
+It stands a fake push service in front of the server (`EXPO_PUSH_URL`) and
+inspects what would have been sent. In this container that also needs
+`NO_PROXY=127.0.0.1,localhost`, or the runtime routes even a localhost fetch
+through the egress proxy and it comes back 403.
+
 ## Report cards
 
 `/reports` picks a class and term; `/reports/[studentId]` is one card and
@@ -280,6 +313,7 @@ to shared storage if the portal is ever run as more than one).
     npm run smoke          portal: marks entry, verify, release
     npm run smoke:app      the family app itself, against this server
     npm run smoke:families access slips for parents
+    npm run smoke:push     announcements and what a notification may say
     npm run smoke:api      mobile API and the advisor
     npm run smoke:setup    onboarding a school from nothing
     npm run smoke:reports  report cards and print output

@@ -227,6 +227,22 @@ async function main() {
     }
   }
 
+  // One announcement already sent, so the dashboard shows what a parent
+  // actually sees rather than an empty space.
+  await q(
+    `INSERT INTO announcements
+       (school_id, title, body, audience, is_pinned, created_by, published_at)
+     VALUES (?,?,?,'all',1,?,NOW())`,
+    [
+      school,
+      'Visiting day is Saturday 12th',
+      'Visiting day is on Saturday 12th, from 10am. Parents are asked to '
+        + 'collect their daughter\u2019s report card from the class teacher '
+        + 'before leaving.',
+      users.dos,
+    ],
+  );
+
   // The seed inserts published marksheets directly rather than through the
   // workflow, so the results they feed have to be computed explicitly —
   // otherwise the demo shows released marks with no report card behind them.

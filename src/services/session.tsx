@@ -24,18 +24,23 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { registerForPushNotifications } from './notifications';
 import {
   ApiError,
   activate as apiActivate,
   getProfile,
   getToken,
   linkChild as apiLinkChild,
+  registerDevice,
   signIn as apiSignIn,
   signOut as apiSignOut,
+  unregisterDevice,
   type Child,
   type Profile,
 } from './api';
@@ -83,6 +88,26 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [stale, setStale] = useState(false);
   const [activeChildId, setActiveChildId] = useState<number | null>(null);
+  const pushToken = useRef<string | null>(null);
+
+  /**
+   * Hands this phone to the server so notifications can reach it.
+   *
+   * Deliberately silent on failure. A parent who declined the permission
+   * prompt, or a build without push credentials, still has a working app —
+   * nothing here is worth an error message about.
+   */
+  const registerThisDevice = useCallback(async () => {
+    try {
+      const token = await registerForPushNotifications();
+      if (!token) return;
+      const platform = Platform.OS === 'ios' ? 'ios' : Platform.OS === 'web' ? 'web' : 'android';
+      await registerDevice(token, platform);
+      pushToken.current = token;
+    } catch {
+      // Not being reachable by notification is not a reason to fail a login.
+    }
+  }, []);
 
   const remember = useCallback(async (next: Profile) => {
     setProfile(next);
@@ -129,7 +154,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
       try {
         const fresh = await getProfile();
-        if (!cancelled) await remember(fresh);
+        if (!cancelled) {
+          await remember(fresh);
+          registerThisDevice();
+        }
       } catch (error) {
         // Only a rejected token ends the session. Anything else — no signal,
         // a server restart — leaves the cached view in place.
@@ -144,15 +172,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [remember, forget]);
+  }, [remember, forget, registerThisDevice]);
 
   const signIn = useCallback(
     async (identifier: string, password: string) => {
       const next = await apiSignIn(identifier, password);
       await remember(next);
       setActiveChildId(next.children[0]?.id ?? null);
+      registerThisDevice();
     },
-    [remember],
+    [remember, registerThisDevice],
   );
 
   const activate = useCallback(
@@ -160,8 +189,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const next = await apiActivate(input);
       await remember(next);
       setActiveChildId(next.children[0]?.id ?? null);
+      registerThisDevice();
     },
-    [remember],
+    [remember, registerThisDevice],
   );
 
   const linkChild = useCallback(
@@ -175,6 +205,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
+    // Retire this phone first, while the token is still accepted. A handset
+    // that keeps receiving a child's results after the family signed out is
+    // the kind of thing that ends a contract.
+    if (pushToken.current) {
+      try {
+        await unregisterDevice(pushToken.current);
+      } catch {
+        // Signing out must always work, connection or not.
+      }
+      pushToken.current = null;
+    }
     await apiSignOut();
     await forget();
   }, [forget]);

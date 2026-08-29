@@ -16,12 +16,15 @@ import {
   ActorRole,
 } from '../domain/marksheet';
 import { recomputeTermResults } from './results';
+import { familiesOfClass, notifyUsers } from './push';
 
 export interface MarksheetSummary {
   id: number;
   status: MarksheetStatus;
   termId: number;
   subjectId: number;
+  classId: number;
+  streamId: number | null;
   className: string;
   streamName: string | null;
   subjectName: string;
@@ -42,6 +45,8 @@ const SUMMARY_SQL = `
          ms.status,
          ms.term_id    AS termId,
          ms.subject_id AS subjectId,
+         ms.class_id   AS classId,
+         ms.stream_id  AS streamId,
          c.name  AS className,
          st.name AS streamName,
          sub.name AS subjectName,
@@ -289,6 +294,33 @@ export async function transition(
             (error instanceof Error ? error.message : String(error)),
         };
       }
+    }
+  }
+
+  // Tell the families. This is the moment the whole product exists for: a
+  // parent finds out that marks are out without anyone printing anything.
+  //
+  // Deliberately after everything else, and deliberately unable to fail the
+  // release: the marks are out either way, and a school must never be left
+  // unable to publish because a push service is down.
+  if (action === 'publish') {
+    try {
+      const families = await familiesOfClass(db, sheet.classId, sheet.streamId);
+      await notifyUsers(
+        db,
+        families,
+        {
+          // No mark, and no child's name. A notification is read off a lock
+          // screen by whoever is holding the phone.
+          title: `${sheet.subjectName} results released`,
+          body: `${sheet.className} ${sheet.assessmentName} results are now in the app.`,
+          data: { screen: 'results', subjectId: sheet.subjectId },
+        },
+        'results',
+        marksheetId,
+      );
+    } catch (error) {
+      console.error('[marksheets] released, but families were not notified:', error);
     }
   }
 

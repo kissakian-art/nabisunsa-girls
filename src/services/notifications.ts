@@ -3,12 +3,11 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Nabisunsa school brand colors
-const NABISUNSA_GOLD = '#C9A84C';
+// The accent the notification tray shows. Per-school branding for this
+// belongs in app.config.js at build time, not here.
+const ACCENT = '#C9A84C';
 
-// AsyncStorage keys
-const NOTIFIED_ANNOUNCEMENTS_KEY = 'nabisunsa_notified_announcements';
-const PUSH_TOKEN_KEY = 'nabisunsa_push_token';
+const PUSH_TOKEN_KEY = 'midway_push_token';
 
 /**
  * Configure how notifications behave when the app is in the foreground.
@@ -32,10 +31,10 @@ export async function setupNotificationChannel(): Promise<void> {
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('announcements', {
       name: 'School Announcements',
-      description: 'Official announcements from Nabisunsa Girls\' Secondary School',
+      description: 'Official announcements from the school',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: NABISUNSA_GOLD,
+      lightColor: ACCENT,
       sound: 'default',
       enableLights: true,
       enableVibrate: true,
@@ -47,7 +46,7 @@ export async function setupNotificationChannel(): Promise<void> {
       description: 'Marks published, report cards, assignment grades',
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 200, 200, 200],
-      lightColor: NABISUNSA_GOLD,
+      lightColor: ACCENT,
       sound: 'default',
       enableLights: true,
       enableVibrate: true,
@@ -96,121 +95,6 @@ export async function registerForPushNotifications(): Promise<string | null> {
   }
 }
 
-/**
- * Fires a local notification that appears in the phone's notification panel.
- * Like WhatsApp — shows immediately with title, body, sound, and vibration.
- */
-export async function scheduleAnnouncementNotification(
-  title: string,
-  body: string,
-  data?: Record<string, unknown>
-): Promise<string> {
-  const notificationId = await Notifications.scheduleNotificationAsync({
-    content: {
-      title,
-      body,
-      sound: 'default',
-      priority: Notifications.AndroidNotificationPriority.HIGH,
-      data: { screen: 'billboard', ...data },
-      ...(Platform.OS === 'android' && { channelId: 'announcements' }),
-    },
-    trigger: null, // null = fire immediately
-  });
-
-  console.log(`[Notifications] Fired announcement notification: ${title} (ID: ${notificationId})`);
-  return notificationId;
-}
-
-/**
- * Fires an academic notification (marks published, grades, etc.)
- */
-export async function scheduleAcademicNotification(
-  title: string,
-  body: string,
-  data?: Record<string, unknown>
-): Promise<string> {
-  const notificationId = await Notifications.scheduleNotificationAsync({
-    content: {
-      title,
-      body,
-      sound: 'default',
-      priority: Notifications.AndroidNotificationPriority.HIGH,
-      data: { screen: 'billboard', ...data },
-      ...(Platform.OS === 'android' && { channelId: 'academic' }),
-    },
-    trigger: null,
-  });
-
-  console.log(`[Notifications] Fired academic notification: ${title} (ID: ${notificationId})`);
-  return notificationId;
-}
-
-/**
- * Checks which announcements have already been notified to avoid duplicates.
- * Returns the set of announcement IDs that have already triggered notifications.
- */
-export async function getNotifiedAnnouncementIds(): Promise<Set<string>> {
-  try {
-    const stored = await AsyncStorage.getItem(NOTIFIED_ANNOUNCEMENTS_KEY);
-    if (stored) {
-      return new Set(JSON.parse(stored));
-    }
-  } catch (error) {
-    console.error('[Notifications] Error reading notified IDs:', error);
-  }
-  return new Set();
-}
-
-/**
- * Marks an announcement as "notified" so it won't trigger a duplicate notification.
- */
-export async function markAnnouncementAsNotified(announcementId: string): Promise<void> {
-  try {
-    const existing = await getNotifiedAnnouncementIds();
-    existing.add(announcementId);
-    // Keep only the last 100 IDs to prevent unbounded storage growth
-    const trimmed = [...existing].slice(-100);
-    await AsyncStorage.setItem(NOTIFIED_ANNOUNCEMENTS_KEY, JSON.stringify(trimmed));
-  } catch (error) {
-    console.error('[Notifications] Error saving notified ID:', error);
-  }
-}
-
-/**
- * Processes a list of announcements and fires notifications for any new ones.
- * This is the main integration point called from the dashboard.
- */
-export async function notifyNewAnnouncements(
-  announcements: { id: string; title: string; body: string; isPinned?: boolean }[]
-): Promise<number> {
-  const alreadyNotified = await getNotifiedAnnouncementIds();
-  let newCount = 0;
-
-  for (const ann of announcements) {
-    if (!alreadyNotified.has(ann.id)) {
-      // Strip emoji from title for cleaner notification display
-      const cleanTitle = ann.title.replace(/[\u{1F4E2}\u{1F4DD}\u{1F54C}\u{1F3C6}\u{1F514}]/gu, '').trim();
-      
-      await scheduleAnnouncementNotification(
-        `🏫 ${cleanTitle}`,
-        ann.body.length > 150 ? ann.body.substring(0, 147) + '...' : ann.body,
-        { announcementId: ann.id, isPinned: ann.isPinned }
-      );
-      await markAnnouncementAsNotified(ann.id);
-      newCount++;
-    }
-  }
-
-  if (newCount > 0) {
-    console.log(`[Notifications] Fired ${newCount} new announcement notification(s).`);
-  }
-
-  return newCount;
-}
-
-/**
- * Sets the app badge count (iOS & Android 8+).
- */
 export async function setBadgeCount(count: number): Promise<void> {
   try {
     await Notifications.setBadgeCountAsync(count);

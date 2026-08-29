@@ -75,6 +75,9 @@ const check = (name, ok, detail = '') => {
   check('a parent with two daughters gets a picker',
     (await page.locator('text=Aisha').count()) > 0 && (await page.locator('text=Brenda').count()) > 0);
 
+  check('what the school has said reaches the dashboard',
+    /From the school/.test(body || '') && /Visiting day is Saturday/.test(body || ''));
+
   console.log('\n--- the other daughter ---');
   const secondChildId = await page.evaluate(() => {
     const el = Array.from(document.querySelectorAll('[data-testid^=child-]'))

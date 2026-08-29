@@ -21,6 +21,9 @@ export function TopBar({ session, schoolName }: { session: Session; schoolName: 
         {/* Report cards are the school's own output, so the whole office
             can print them. Setup is administration and is not theirs. */}
         <Link href="/reports">Report cards</Link>
+        {/* Announcements reach every parent at once, so they carry the same
+            authority as releasing marks. */}
+        {canRelease(session.role) && <Link href="/announcements">Announcements</Link>}
         {canRelease(session.role) && <Link href="/setup">Setup</Link>}
         <form action={signOut}>
           <button className="btn secondary" type="submit">Sign out</button>

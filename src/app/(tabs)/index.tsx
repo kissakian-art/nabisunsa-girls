@@ -28,7 +28,12 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { Colors, MaxContentWidth, Spacing } from '../../constants/theme';
 import { useSession } from '../../services/session';
-import { getResults, type ResultsPayload } from '../../services/api';
+import {
+  getAnnouncements,
+  getResults,
+  type Announcement,
+  type ResultsPayload,
+} from '../../services/api';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -37,6 +42,7 @@ export default function Dashboard() {
   const { profile, activeChild, selectChild, stale, signOut } = useSession();
 
   const [results, setResults] = useState<ResultsPayload | null>(null);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -48,6 +54,12 @@ export default function Dashboard() {
       setResults(await getResults({ studentId: activeChild.id }));
     } catch (e: any) {
       setError(e?.message || 'Could not load results.');
+    }
+    try {
+      setAnnouncements(await getAnnouncements());
+    } catch {
+      // The marks are the point of this screen. A school notice that failed
+      // to load is not worth an error over the top of them.
     }
   }, [activeChild]);
 
@@ -227,6 +239,30 @@ export default function Dashboard() {
               </View>
             )}
 
+            {/* What the school has said. Pinned first, newest after. */}
+            {announcements.length > 0 && (
+              <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
+                <Text style={[styles.cardTitle, { color: colors.text }]}>From the school</Text>
+                {announcements.slice(0, 4).map((note) => (
+                  <View key={note.id} style={styles.note}>
+                    <Text style={[styles.noteTitle, { color: colors.text }]}>
+                      {note.isPinned ? '📌 ' : ''}{note.title}
+                    </Text>
+                    <Text style={[styles.noteBody, { color: colors.textSecondary }]}>
+                      {note.body}
+                    </Text>
+                    {note.publishedAt ? (
+                      <Text style={[styles.noteDate, { color: colors.textSecondary }]}>
+                        {new Date(note.publishedAt).toLocaleDateString('en-GB', {
+                          day: 'numeric', month: 'long', year: 'numeric',
+                        })}
+                      </Text>
+                    ) : null}
+                  </View>
+                ))}
+              </View>
+            )}
+
             {/* Two things to do next, not twelve. */}
             <TouchableOpacity
               testID="report-card"
@@ -330,6 +366,10 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.three,
   },
   actionOutlineText: { fontSize: 14, fontWeight: '700' },
+  note: { paddingVertical: Spacing.two },
+  noteTitle: { fontSize: 14, fontWeight: '700' },
+  noteBody: { fontSize: 13, lineHeight: 19, marginTop: 3 },
+  noteDate: { fontSize: 11, marginTop: 4 },
   errorText: { fontSize: 13, fontWeight: '600', marginBottom: Spacing.one },
   link: { fontSize: 13, fontWeight: '700' },
   footnote: { fontSize: 11, textAlign: 'center', marginBottom: Spacing.four },

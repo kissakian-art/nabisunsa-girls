@@ -239,6 +239,45 @@ export function getResults(options: { studentId?: number; termId?: number } = {}
   return request<ResultsPayload>(`/api/results${suffix}`);
 }
 
+export interface Announcement {
+  id: number;
+  title: string;
+  body: string;
+  isPinned: boolean;
+  isUrgent: boolean;
+  publishedAt: string | null;
+  className: string | null;
+  streamName: string | null;
+}
+
+/** What the school has told this family. Published, and addressed to them. */
+export async function getAnnouncements(): Promise<Announcement[]> {
+  const { announcements } = await request<{ announcements: Announcement[] }>(
+    '/api/announcements',
+  );
+  return announcements;
+}
+
+/**
+ * Tells the server which phone this is, so notifications reach it.
+ *
+ * Registered against the signed-in account rather than the installation, so
+ * an old handset passed on to a relative stops receiving a child's results
+ * once someone else signs in on it.
+ */
+export function registerDevice(token: string, platform: 'android' | 'ios' | 'web') {
+  return request<{ ok: true }>('/api/devices', {
+    method: 'POST',
+    body: { token, platform },
+  });
+}
+
+export function unregisterDevice(token: string) {
+  return request<{ ok: true }>(`/api/devices?token=${encodeURIComponent(token)}`, {
+    method: 'DELETE',
+  });
+}
+
 export interface AdvisorTurn {
   role: 'user' | 'model';
   text: string;
