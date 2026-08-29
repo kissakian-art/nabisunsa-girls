@@ -173,5 +173,39 @@ two daughters at the school sees both from one account.
 which by construction only ever contains marks the school has released.
 There is no filter to forget.
 
-Run `node scripts/api-smoke.js` against a running server to check all of
-that end to end.
+### The academic advisor
+
+`POST /api/advisor { message, history, studentId } -> { reply }`
+
+**The Gemini key lives here and nowhere else.** The app used to call Gemini
+directly with `EXPO_PUBLIC_GEMINI_API_KEY` — and anything prefixed
+`EXPO_PUBLIC_` is compiled into the APK, so that key could be read by anyone
+who downloaded the app. Set `GEMINI_API_KEY` in `.env.production`; the app
+has no key at all.
+
+Moving it also fixed a second problem: the system prompt is now built on the
+server from the student's own released results. The app sends only a question
+and the conversation so far. It cannot claim to be a different student, state
+marks it does not have, or grant itself a different instruction — the roles in
+the history are forced to `user`/`model` so a crafted payload cannot smuggle
+in a system turn.
+
+`lib/advisor.ts` holds the prompt, and its rules are tested: the advisor may
+compare, explain and encourage, but it may **never** say a student has
+qualified or will be admitted. Admission is decided by the institutions and
+cut-off points move every year — a confident wrong answer becomes a furious
+parent in the head teacher's office, and the end of a contract.
+
+Questions are rate limited per account (in memory, so per instance; move it
+to shared storage if the portal is ever run as more than one).
+
+## Running the browser suites
+
+    npm run smoke          portal: marks entry, verify, release
+    npm run smoke:api      mobile API and the advisor
+    npm run smoke:setup    onboarding a school from nothing
+    npm run smoke:reports  report cards and print output
+
+Each reseeds the demo school first. They share a database and change it as
+they go — the portal suite releases Mathematics — so without that they pass
+or fail depending on the order they were run in.

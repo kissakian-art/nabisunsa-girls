@@ -189,12 +189,20 @@ async function main() {
     )).insertId;
 
     if (status !== 'draft') {
-      for (const studentId of studentIds) {
-        // A couple of absences, so the entry screen shows that case.
-        const absent = studentId % 17 === 0;
+      for (const [index, studentId] of studentIds.entries()) {
+        // Keyed on position, not the database id: ids move on every reseed,
+        // so id-based rules make the demo data — and the tests that read it —
+        // quietly different each time.
+        //
+        // The last student sits nothing at all, so the report card run always
+        // includes the "no results released" case.
+        const sitsNothing = index === studentIds.length - 1;
+        if (sitsNothing) continue;
+
+        const absent = index % 9 === 4;
         await q(
           'INSERT INTO marks (school_id, marksheet_id, student_id, score, is_absent) VALUES (?,?,?,?,?)',
-          [school, sheet, studentId, absent ? null : 35 + ((studentId * 7) % 60), absent ? 1 : 0],
+          [school, sheet, studentId, absent ? null : 35 + ((index * 7) % 60), absent ? 1 : 0],
         );
       }
     }

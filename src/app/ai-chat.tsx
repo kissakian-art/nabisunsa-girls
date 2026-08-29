@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { StyleSheet, View, Text, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, useColorScheme, Platform, KeyboardAvoidingView } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { auth } from '../services/firebase';
 import { getUserProfile } from '../services/db/users';
 import { getStudentMarksForTerm } from '../services/db/marks';
@@ -11,6 +10,7 @@ import { User, Marks } from '../types';
 import { Colors, Spacing, MaxContentWidth } from '../constants/theme';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import { askAdvisor } from '../services/api';
 
 interface ChatMessage {
   id: string;
@@ -154,85 +154,33 @@ export default function AiChatScreen() {
     setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
 
     try {
-      const apiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
+      // The advisor runs on the server. The app sends only the question and
+      // the conversation so far — who the student is, what her marks are, and
+      // what the advisor may say are all decided server-side.
+      //
+      // This used to call Gemini directly with EXPO_PUBLIC_GEMINI_API_KEY,
+      // which ships inside the APK and can be read by anyone who downloads it.
+      const history = messages
+        .slice(1) // the opening greeting is ours, not part of the conversation
+        .map(m => ({ role: m.sender === 'user' ? 'user' as const : 'model' as const, text: m.text }));
 
-      if (apiKey && apiKey !== 'YOUR_GEMINI_API_KEY') {
-        // A. Live Gemini API execution
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      const { reply } = await askAdvisor(textToSend, history);
 
-        // Exclude the initial greeting from the history sent to the model, as Gemini expects chat history to start with a 'user' message.
-        const chatHistory = messages
-          .slice(1) // Exclude the first message (which is always the AI welcome message)
-          .map(m => ({
-            role: m.sender === 'user' ? 'user' : 'model',
-            parts: [{ text: m.text }],
-          }));
-
-        const chat = model.startChat({
-          history: chatHistory,
-          systemInstruction: {
-            role: 'system',
-            parts: [{ text: systemPrompt }],
-          },
-        });
-
-        const result = await chat.sendMessage(textToSend);
-        const responseText = result.response.text();
-
-        const aiMsg: ChatMessage = {
-          id: Math.random().toString(),
-          sender: 'ai',
-          text: responseText,
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, aiMsg]);
-      } else {
-        // B. Dynamic Mock Counselor Fallback (Robust Developer Showcase)
-        await new Promise(resolve => setTimeout(resolve, 1200)); // Simulate thinking
-
-        const query = textToSend.toLowerCase();
-        let reply = '';
-
-        if (query === 'hi' || query === 'hello' || query === 'hey' || query === 'greetings') {
-          reply = `Hello ${userProfile?.displayName || 'Student'}! I am your Nabisunsa Academic Advisor. How can I assist you or your parent today with your career and course choices?`;
-        } else if (query.includes('thanks') || query.includes('thank you')) {
-          reply = `You are welcome, ${userProfile?.displayName || 'my dear student'}. It is our pride at Nabisunsa Girls' Secondary School to nurture excellent career paths. Please let me know if you or your parents have any more questions!`;
-        } else if (query.includes('computer science') || query.includes('computer') || query.includes('companies')) {
-          reply = `Makerere University (MUK) is Uganda's premier institution for Computer Science (cutoff 43.1). Top companies in Uganda that hire computer science graduates include MTN, Airtel, Stanbic Bank, Centenary Bank, and international tech hubs like Safaricom, Andela, plus key government departments like NITA-U. Given your strong performance in Sciences, this is a brilliant fit for you!`;
-        } else if (query.includes('kyambogo') || query.includes('kyu')) {
-          reply = `Kyambogo University (KYU) has outstanding engineering and vocational programs. For example, their Bachelor of Electrical Engineering has a JAB cutoff of 47.4. They emphasize practical laboratory work, making their graduates highly sought after in Ugandan industries.`;
-        } else if (query.includes('medicine') || query.includes('pharmacy') || query.includes('doctor') || query.includes('nurse')) {
-          reply = `Medicine (MAM) at Makerere has a cutoff of 49.7, and Pharmacy (PHA) has 48.9. Since you have strong chemistry and biology backgrounds, these are prestigious choices. If government entry is highly competitive, you also qualify for Direct Entry at MUST, KIU, or UCU.`;
-        } else if (query.includes('direct') || query.includes('mbarara') || query.includes('must') || query.includes('kiu') || query.includes('ucu') || query.includes('gulu') || query.includes('busitema')) {
-          reply = `For universities like MUST, KIU, UCU, and Gulu, admissions are governed by the Direct Entry system rather than strict points-based JAB cutoffs. They require a minimum of 2 Principal Passes at UACE (A-Level) and 5 passes at UCE (O-Level). Since you currently have solid passes in your principal subjects, you qualify comfortably for Direct Entry in these premium institutions!`;
-        } else if (query.includes('engineering') || query.includes('civil') || query.includes('electrical')) {
-          reply = `Engineering at Makerere requires high JAB weights. The official cutoff for Civil Engineering (CIV) is 49.7, and Kyambogo Electrical (BEL) is 47.4. Your current marks put you on a strong track for private entry, and with dedicated continuous assessment effort, you can target government admission!`;
-        } else if (query.includes('holiday') || query.includes('vocational') || query.includes('skills')) {
-          reply = `For vacation skills, we highly recommend the 6-Month Certificate in Fashion, Crested Design & Tailoring at Watoto Skills Care. It builds immediate wealth-generating capabilities during holidays, which parents highly value.`;
-        } else if (query.includes('law') || query.includes('arts') || query.includes('literature')) {
-          reply = `To qualify for LLB at Makerere (cutoff: 55%), you must pass their Law Pre-Entry exams. Alternatively, Uganda Christian University (UCU) offers direct entry with 2 Principal Passes and a Credit 3 in O-Level English, which is highly prestigious and suited to Nabisunsa's standards.`;
-        } else {
-          reply = `That is a very thoughtful question. As a science student here at Nabisunsa Girls' Secondary School, I encourage you to check specific course weight requirements. Would you like to explore Makerere University's cutoff points for science programs, or discuss direct entry options at other universities like MUST or UCU?`;
-        }
-
-        const aiMsg: ChatMessage = {
-          id: Math.random().toString(),
-          sender: 'ai',
-          text: reply,
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, aiMsg]);
-      }
-    } catch (e: any) {
-      console.error('Gemini error:', e);
-      const errRef: ChatMessage = {
+      setMessages(prev => [...prev, {
         id: Math.random().toString(),
         sender: 'ai',
-        text: `My apologies. I encountered a communication hiccup connecting to Google Generative AI: ${e.message || e}. Please verify your EXPO_PUBLIC_GEMINI_API_KEY setup in your environment configs!`,
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, errRef]);
+        text: reply,
+        timestamp: new Date(),
+      }]);
+    } catch (e: any) {
+      // Say something a parent can act on. The server never returns provider
+      // detail, so whatever arrives here is already safe to show.
+      setMessages(prev => [...prev, {
+        id: Math.random().toString(),
+        sender: 'ai',
+        text: e?.message || 'I could not reach the school right now. Please try again shortly.',
+        timestamp: new Date(),
+      }]);
     } finally {
       setSending(false);
       setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);

@@ -10,6 +10,7 @@
 
 const { chromium } = require('playwright');
 const fs = require('fs');
+const { reseed } = require('./lib/reseed');
 
 const CHROME = process.env.CHROME_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const BASE = process.env.BASE_URL || 'http://127.0.0.1:4500';
@@ -22,6 +23,8 @@ const check = (name, ok, detail = '') => {
 };
 
 (async () => {
+  // Start from known data: the suites share a database and change it.
+  reseed();
   fs.mkdirSync(SHOTS, { recursive: true });
   const browser = await chromium.launch(
     fs.existsSync(CHROME) ? { executablePath: CHROME } : {},

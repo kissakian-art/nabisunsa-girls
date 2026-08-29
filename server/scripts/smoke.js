@@ -18,6 +18,7 @@ const CHROME = process.env.CHROME_PATH || '/opt/pw-browsers/chromium-1194/chrome
 const BASE = process.env.BASE_URL || 'http://127.0.0.1:4500';
 const SHOTS = process.env.SHOT_DIR || '/tmp/portal-shots';
 const fs = require('fs');
+const { reseed } = require('./lib/reseed');
 
 let failures = 0;
 const check = (name, ok, detail = '') => {
@@ -50,6 +51,8 @@ async function openSheet(page, subject) {
 }
 
 (async () => {
+  // Start from known data: the suites share a database and change it.
+  reseed();
   fs.mkdirSync(SHOTS, { recursive: true });
   const browser = await chromium.launch(
     fs.existsSync(CHROME) ? { executablePath: CHROME } : {},

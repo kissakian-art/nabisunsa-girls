@@ -10,6 +10,8 @@
  *   node scripts/api-smoke.js
  */
 
+const { reseed } = require('./lib/reseed');
+
 const BASE = process.env.BASE_URL || 'http://127.0.0.1:4500';
 
 let failures = 0;
@@ -34,6 +36,9 @@ const get = (path, token) =>
   });
 
 (async () => {
+  // Start from known data: the suites share a database and change it.
+  reseed();
+
   console.log('\n--- sign in ---');
   const bad = await post('/api/auth/login', {
     email: 'parent1@nabisunsa.test',
@@ -98,6 +103,32 @@ const get = (path, token) =>
   check('each result carries a grade and a position',
     first.grade != null && first.position != null,
     `${first.subjectName}: ${first.finalScore} ${first.grade}, position ${first.position} of ${first.groupSize}`);
+
+  console.log('\n--- the academic advisor ---');
+  {
+    const anonAsk = await post('/api/advisor', { message: 'hello' });
+    check('the advisor refuses an unauthenticated question', anonAsk.status === 401,
+      `HTTP ${anonAsk.status}`);
+
+    const empty = await post('/api/advisor', { message: '   ' }, token);
+    check('an empty question is refused', empty.status === 400, `HTTP ${empty.status}`);
+
+    const huge = await post('/api/advisor', { message: 'x'.repeat(5000) }, token);
+    check('an oversized question is refused', huge.status === 400, `HTTP ${huge.status}`);
+
+    // Without GEMINI_API_KEY the route must say so cleanly rather than crash
+    // or, worse, fall back to a key shipped in the app.
+    const ask = await post('/api/advisor', { message: 'How can I improve?' }, token);
+    const askBody = await ask.json();
+    if (process.env.GEMINI_API_KEY) {
+      check('the advisor answers', ask.status === 200 && typeof askBody.reply === 'string',
+        `HTTP ${ask.status}`);
+    } else {
+      check('an unconfigured advisor fails cleanly', ask.status === 503, `HTTP ${ask.status}`);
+      check('and never leaks provider detail',
+        !/api[_ ]?key|quota|gemini/i.test(askBody.error || ''), askBody.error);
+    }
+  }
 
   console.log('\n--- a family cannot reach another family\'s child ---');
   const other = await post('/api/auth/login', {
