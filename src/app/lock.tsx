@@ -1,98 +1,73 @@
-import { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator, useColorScheme } from 'react-native';
-import { useRouter } from 'expo-router';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '../services/firebase';
-import { SchoolConfig } from '../types';
+/**
+ * The school's portal has been switched off.
+ *
+ * The reason and the school's name come from the session, which got them
+ * from the server. Nothing here decides anything: by the time this screen
+ * appears the server is already refusing to serve marks, so a parent who
+ * bypassed it would see an empty app rather than someone else's data.
+ */
+
+import { StyleSheet, View, Text, TouchableOpacity, useColorScheme } from 'react-native';
 import { Colors, Spacing } from '../constants/theme';
+import { Brand } from '../constants/brand';
+import { useSession } from '../services/session';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 
 export default function LockScreen() {
-  const router = useRouter();
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+  const { profile, lockReason, signOut } = useSession();
 
-  const [schoolConfig, setSchoolConfig] = useState<SchoolConfig | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  // Subscribe to school config in real-time to release locks instantly if reactivated
-  useEffect(() => {
-    const schoolRef = doc(db, 'schools', 'nabisunsa_girls');
-    const unsubscribe = onSnapshot(schoolRef, (snap) => {
-      if (snap.exists()) {
-        const config = snap.data() as SchoolConfig;
-        setSchoolConfig(config);
-        // If reactivated, let the root layout handle the redirect
-      }
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  const disabledReason = schoolConfig?.disabledReason || 'System subscription renewal is currently pending.';
-
-  if (loading) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.gold} />
-      </View>
-    );
-  }
+  const schoolName = profile?.school?.name || Brand.name;
+  const motto = profile?.school?.motto || Brand.motto;
+  const disabledReason =
+    lockReason || 'The school\u2019s subscription renewal is currently pending.';
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-      
-      {/* Premium Branded Frame */}
+
       <View style={[styles.lockCard, { backgroundColor: colors.backgroundElement, borderColor: colors.gold }]}>
-        {/* Elite Icon Shield */}
         <View style={[styles.shieldIconContainer, { backgroundColor: colors.champagne }]}>
           <FontAwesome5 name="shield-alt" size={48} color={colors.gold} />
         </View>
 
-        {/* School Crest Header */}
         <Text style={[styles.schoolTitle, { color: colors.text }]}>
-          NABISUNSA GIRLS' SECONDARY SCHOOL
+          {schoolName.toUpperCase()}
         </Text>
-        <Text style={[styles.motto, { color: colors.textSecondary }]}>
-          "Empowerment Through Education"
-        </Text>
+        {motto ? (
+          <Text style={[styles.motto, { color: colors.textSecondary }]}>{motto}</Text>
+        ) : null}
 
-        {/* Divider */}
         <View style={[styles.divider, { backgroundColor: colors.gold }]} />
 
-        {/* Warning Body */}
         <Text style={[styles.lockHeader, { color: colors.error }]}>
           Portal Temporarily Suspended
         </Text>
-        
+
         <Text style={[styles.description, { color: colors.textSecondary }]}>
           {disabledReason}
         </Text>
 
         <Text style={[styles.contactInfo, { color: colors.text }]}>
-          For subscription renewals or immediate assistance, please contact the IT administrative desk at:
-        </Text>
-        
-        <Text style={[styles.emailLink, { color: colors.primary }]}>
-          admin@nabisunsagirls.ac.ug
+          Please contact the school office:
         </Text>
 
-        {/* Backdoor for developers */}
-        <TouchableOpacity 
+        <Text style={[styles.emailLink, { color: colors.primary }]}>
+          {Brand.contactEmail}
+        </Text>
+
+        <TouchableOpacity
           style={[styles.developerBtn, { borderColor: colors.gold }]}
-          onPress={() => router.push('/developer')}
+          onPress={signOut}
         >
-          <Text style={[styles.developerBtnText, { color: colors.gold }]}>
-            Developer Console Panel
-          </Text>
+          <Text style={[styles.developerBtnText, { color: colors.gold }]}>Sign out</Text>
         </TouchableOpacity>
       </View>
 
       <Text style={[styles.footerText, { color: colors.textSecondary }]}>
-        Nabisunsa Portal © {new Date().getFullYear()} — Powered by Developer Super-Admin Controls
+        {schoolName} © {new Date().getFullYear()}
       </Text>
     </View>
   );

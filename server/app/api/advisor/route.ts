@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { apiSession, authorisedChild, badRequest, notFound, unauthorized } from '../../../lib/api';
+import {
+  apiSession,
+  authorisedChild,
+  badRequest,
+  isServable,
+  notFound,
+  schoolState,
+  suspended,
+  unauthorized,
+} from '../../../lib/api';
 import { getStudentTermResults } from '../../../lib/results';
 import { currentTerm } from '../../../lib/marksheets';
 import { buildAdvisorPrompt, takeToken } from '../../../lib/advisor';
@@ -49,6 +58,9 @@ export async function POST(request: NextRequest) {
   if (message.length > MAX_MESSAGE) {
     return badRequest(`Please keep the question under ${MAX_MESSAGE} characters`);
   }
+
+  const state = await schoolState(context);
+  if (!isServable(state)) return suspended(state.suspendedReason);
 
   const key = process.env.GEMINI_API_KEY;
   if (!key) {

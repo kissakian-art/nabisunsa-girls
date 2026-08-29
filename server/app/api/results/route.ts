@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { RowDataPacket } from 'mysql2';
-import { apiSession, authorisedChild, notFound, unauthorized } from '../../../lib/api';
+import {
+  apiSession,
+  authorisedChild,
+  isServable,
+  notFound,
+  schoolState,
+  suspended,
+  unauthorized,
+} from '../../../lib/api';
 import { getStudentTermResults } from '../../../lib/results';
 
 export const dynamic = 'force-dynamic';
@@ -25,6 +33,11 @@ interface TermRow extends RowDataPacket {
 export async function GET(request: NextRequest) {
   const context = apiSession(request);
   if (!context) return unauthorized();
+
+  // A school that has been switched off serves no marks, whatever the app
+  // in the parent's hand believes.
+  const state = await schoolState(context);
+  if (!isServable(state)) return suspended(state.suspendedReason);
 
   const params = request.nextUrl.searchParams;
   const requestedStudent = params.get('studentId');

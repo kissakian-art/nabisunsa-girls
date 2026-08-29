@@ -160,6 +160,48 @@ const get = (path, token) =>
   check('and returns that child, not the first',
     secondPayload.child.id === ownChildIds[1]);
 
+  console.log('\n--- a suspended school serves no marks ---');
+  {
+    // The commercial kill switch. It has to be enforced here rather than in
+    // the app: an app can be patched, or an old APK kept installed, so a
+    // school that stops paying must be refused by the server itself.
+    const mysql = require('mysql2/promise');
+    const conn = await mysql.createConnection({
+      uri: process.env.DATABASE_URL || 'mysql://root@127.0.0.1:3306/midway_school',
+    });
+    await conn.query(
+      "UPDATE schools SET status = 'suspended', suspended_reason = ? WHERE slug = 'nabisunsa-girls'",
+      ['Subscription renewal pending.'],
+    );
+
+    const locked = await get('/api/results', token);
+    check('results are refused while suspended', locked.status === 403,
+      `HTTP ${locked.status}`);
+    const lockedBody = await locked.json();
+    check('and the app is told it is a lock, not a fault', lockedBody.locked === true);
+    check('with the school\'s own reason', /renewal pending/.test(lockedBody.error || ''),
+      lockedBody.error);
+
+    const lockedAsk = await post('/api/advisor', { message: 'How can I improve?' }, token);
+    check('the advisor is refused too', lockedAsk.status === 403, `HTTP ${lockedAsk.status}`);
+
+    // /api/me must keep answering, or the app cannot tell a parent why it
+    // has gone quiet — it would just look broken.
+    const stillMe = await get('/api/me', token);
+    check('the profile still loads', stillMe.status === 200, `HTTP ${stillMe.status}`);
+    const lockedProfile = await stillMe.json();
+    check('and carries the suspension', lockedProfile.school.status === 'suspended',
+      lockedProfile.school.status);
+
+    await conn.query(
+      "UPDATE schools SET status = 'active', suspended_reason = NULL WHERE slug = 'nabisunsa-girls'",
+    );
+    const restored = await get('/api/results', token);
+    check('reactivating restores service immediately', restored.status === 200,
+      `HTTP ${restored.status}`);
+    await conn.end();
+  }
+
   console.log(`\n${failures === 0 ? 'ALL CHECKS PASSED' : `${failures} CHECK(S) FAILED`}`);
   process.exit(failures === 0 ? 0 : 1);
 })().catch((error) => {

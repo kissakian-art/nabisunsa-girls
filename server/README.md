@@ -169,6 +169,19 @@ family's child returns 404 rather than 403 — confirming a student exists
 would itself leak something. `students.user_id` may repeat, so a parent with
 two daughters at the school sees both from one account.
 
+**A school that stops paying is switched off here, not in the app.**
+`schools.status` gates every endpoint that carries a child's marks: a
+`suspended` or `closed` school gets 403 with the school's own reason, and the
+app shows its lock screen. It has to be enforced on the server — an app can
+be patched and an old APK kept installed, so a switch the client evaluates is
+not a switch at all. `PlatformDb.forSchool` already refuses a suspended
+school; the mobile API constructs its `TenantDb` from the token instead, so
+it checks explicitly (`schoolState` in `lib/api.ts`).
+
+`/api/me` is the one endpoint a suspended school still gets an answer from.
+Without it the app cannot tell a parent why it has gone quiet, and a silent
+app becomes a complaint to the head teacher rather than a renewal.
+
 **Unreleased marks cannot appear.** Everything comes from `term_results`,
 which by construction only ever contains marks the school has released.
 There is no filter to forget.

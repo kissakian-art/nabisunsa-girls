@@ -52,6 +52,41 @@ export const notFound = (what = 'Not found') =>
 export const badRequest = (why: string) =>
   NextResponse.json({ error: why }, { status: 400 });
 
+export const suspended = (reason: string | null) =>
+  NextResponse.json(
+    {
+      error: reason || 'This school\u2019s portal is not active at the moment.',
+      locked: true,
+    },
+    { status: 403 },
+  );
+
+interface StatusRow extends RowDataPacket {
+  status: 'trial' | 'active' | 'suspended' | 'closed';
+  suspendedReason: string | null;
+}
+
+/**
+ * The tenant's commercial state.
+ *
+ * A school that stops paying is switched off here, not in the app: an app
+ * can be patched, downgraded or run from an old APK, so the kill switch has
+ * to live on the server to mean anything. `/api/me` still answers for a
+ * suspended school — that is how the app knows to show the lock screen and
+ * who to call — but nothing that carries a child's marks does.
+ */
+export async function schoolState(context: ApiContext): Promise<StatusRow> {
+  const [row] = await context.db.raw<StatusRow>(
+    `SELECT status, suspended_reason AS suspendedReason
+       FROM schools WHERE id = :schoolId`,
+  );
+  return row;
+}
+
+/** True while the school may be served data. A trial is a paying state. */
+export const isServable = (state: StatusRow) =>
+  state.status === 'trial' || state.status === 'active';
+
 export interface Child extends RowDataPacket {
   id: number;
   firstName: string;

@@ -142,6 +142,13 @@ export interface School {
   motto: string | null;
   logoUrl: string | null;
   brandPrimary: string | null;
+  /**
+   * The school's commercial state. The server refuses to serve marks for a
+   * suspended school regardless of what the app does with this — it is here
+   * so the app can say why rather than looking broken.
+   */
+  status: 'trial' | 'active' | 'suspended' | 'closed';
+  suspendedReason: string | null;
 }
 
 export interface Profile {
