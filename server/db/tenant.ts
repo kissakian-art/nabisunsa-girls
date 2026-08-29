@@ -358,6 +358,38 @@ export class PlatformDb {
     return rows;
   }
 
+  /**
+   * For writes, returning the header so a caller can read `insertId` and
+   * `affectedRows`. `query` above types its result as rows, which an INSERT
+   * never returns.
+   */
+  async execute(sql: string, params: unknown[] = []): Promise<ResultSetHeader> {
+    const [result] = await this.db.query<ResultSetHeader>(sql, params);
+    return result;
+  }
+
+  /**
+   * Runs `fn` inside a transaction.
+   *
+   * Creating a school is several inserts — the school, its weighting, its
+   * grading scale, its first administrator — and a half-applied one is a
+   * tenant that looks present and cannot compute a mark.
+   */
+  async transaction<T>(fn: (tx: PlatformDb) => Promise<T>): Promise<T> {
+    const conn = await this.db.getConnection();
+    try {
+      await conn.beginTransaction();
+      const result = await fn(new PlatformDb(conn as unknown as Pool));
+      await conn.commit();
+      return result;
+    } catch (error) {
+      await conn.rollback();
+      throw error;
+    } finally {
+      conn.release();
+    }
+  }
+
   /** Opens a tenant-scoped handle, after confirming the school exists. */
   async forSchool(schoolId: number): Promise<TenantDb> {
     const [rows] = await this.db.query<RowDataPacket[]>(

@@ -231,3 +231,32 @@ input:focus, select:focus { outline: 2px solid var(--navy-light); outline-offset
   .report:last-child { page-break-after: auto; break-after: auto; }
   table { page-break-inside: avoid; }
 }
+
+/* ---------------------------------------------------------------
+   Platform console
+   Midway's own screen, not a school's. It is deliberately a
+   different colour from the portal: someone who administers several
+   schools should never have to wonder which one they are looking at,
+   or mistake the console for a school's own dashboard.
+   --------------------------------------------------------------- */
+.topbar.platform { background: #23202e; border-bottom: 3px solid var(--gold); }
+.topbar.platform .school { color: #f0d68a; }
+
+.badge.trial     { background: #fff3d6; color: var(--warn); }
+.badge.active    { background: #daf1e3; color: var(--ok); }
+.badge.suspended { background: #fdecee; color: var(--danger); }
+.badge.closed    { background: #eceff4; color: #4a5568; }
+
+/* Numbers that are compared down a column read better aligned and
+   tabular — school sizes are scanned, not read. */
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+.school-name { font-weight: 600; }
+.school-slug { color: var(--muted); font-size: 13px; font-family: ui-monospace, monospace; }
+
+/* The reason a school was turned off, shown wherever its status is. */
+.why { color: var(--danger); font-size: 13px; }
+
+.dim { color: var(--muted); }
+
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0 20px; }

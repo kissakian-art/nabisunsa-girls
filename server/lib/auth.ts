@@ -10,12 +10,12 @@
  * Everything downstream derives its tenant scope from here.
  */
 
-import crypto from 'crypto';
 import { cookies } from 'next/headers';
 import bcrypt from 'bcryptjs';
 import type { RowDataPacket } from 'mysql2';
 import { getPool, TenantDb } from '../db/tenant';
 import type { ActorRole } from '../domain/marksheet';
+import { PORTAL_AUDIENCE, decodeToken, encodeToken } from '../domain/session-token';
 
 export const SESSION_COOKIE = 'midway_session';
 
@@ -46,35 +46,22 @@ function secret(): string {
   return value;
 }
 
-function sign(payload: string): string {
-  return crypto.createHmac('sha256', secret()).update(payload).digest('base64url');
-}
-
 export function encodeSession(session: Session): string {
-  const payload = Buffer.from(JSON.stringify(session)).toString('base64url');
-  return `${payload}.${sign(payload)}`;
+  return encodeToken(secret(), PORTAL_AUDIENCE, session);
 }
 
+/**
+ * The audience is what keeps this separate from the platform console's
+ * sessions, which are signed with the same secret. See domain/session-token.ts
+ * — a platform token presented here fails the signature, not a field check.
+ */
 export function decodeSession(token: string | undefined): Session | null {
-  if (!token) return null;
-  const [payload, signature] = token.split('.');
-  if (!payload || !signature) return null;
-
-  // Constant-time compare: a fast string !== leaks timing information about
-  // how much of the signature matched.
-  const expected = sign(payload);
-  const a = Buffer.from(signature);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
-
-  try {
-    const session = JSON.parse(Buffer.from(payload, 'base64url').toString()) as Session;
-    if (!session.userId || !session.schoolId || !session.role) return null;
-    if (session.expiresAt * 1000 < Date.now()) return null;
-    return session;
-  } catch {
-    return null;
-  }
+  const session = decodeToken<Session>(secret(), PORTAL_AUDIENCE, token);
+  if (!session) return null;
+  // A school session is meaningless without all three: the tenant scope and
+  // the role are both read straight off it.
+  if (!session.userId || !session.schoolId || !session.role) return null;
+  return session;
 }
 
 interface UserRow extends RowDataPacket {

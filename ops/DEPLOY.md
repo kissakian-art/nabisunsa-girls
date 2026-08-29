@@ -112,22 +112,42 @@ CADDY
 docker exec caddy caddy reload --config /etc/caddy/Caddyfile
 ```
 
-## 7. The first school and its administrator
+## 7. The platform administrator
 
-The one thing that cannot be done through the portal, because it is what
+The one thing that cannot be done through a browser, because it is what
 creates the first way in:
 
 ```bash
-docker exec -it school node scripts/bootstrap-school.js \
-  --slug nabisunsa-girls \
-  --name "Nabisunsa Girls' Secondary School" \
-  --admin head@nabisunsagirls.ac.ug \
-  --password 'choose-a-long-one'
+docker exec -it school env ADMIN_PASSWORD='choose-a-long-one' \
+  node scripts/bootstrap-platform-admin.js \
+    --email you@midwayug.com --name "Your Name"
 ```
 
-The slug matters: it is what the branded app sends with every sign-in, so it
-must match `EXPO_PUBLIC_SCHOOL_SLUG` in that school's build. Re-running this
-is safe — it never changes an existing account's password.
+At least 12 characters. The password is passed in the environment rather than
+as `--password` so it does not appear in the container's process list.
+Re-running is safe: an existing account is never given a new password.
+
+Then sign in at `https://school.midwayug.com/platform` — Midway's own console,
+not the school portal — and add schools there. Each school is created with the
+Ugandan 20/80 weighting, the standard grading scale and its own administrator,
+so onboarding a school never needs a shell on this server again.
+
+### The old way, for a school with no console
+
+`scripts/bootstrap-school.js` still creates a school and its administrator
+directly, which is useful if you are standing up a single-school deployment
+and do not want a platform account at all:
+
+```bash
+docker exec -it school env ADMIN_PASSWORD='choose-a-long-one' \
+  node scripts/bootstrap-school.js \
+    --slug nabisunsa-girls \
+    --name "Nabisunsa Girls' Secondary School" \
+    --admin head@nabisunsagirls.ac.ug
+```
+
+The slug matters either way: it is what the branded app sends with every
+sign-in, so it must match `EXPO_PUBLIC_SCHOOL_SLUG` in that school's build.
 
 ## 8. Check it
 
@@ -136,9 +156,17 @@ curl -s https://school.midwayug.com/api/health
 ```
 
 `{"ok":true,...}` means the app is up, the database is reachable and the
-schema is there. Then open the site and sign in as the administrator you just
-created, and work through **Setup**: classes, subjects, class lists,
-marksheets. No SQL from here on.
+schema is there.
+
+Then sign in at `/platform` as the administrator you just created and add the
+school. That gives the school its own administrator, who signs in at `/` and
+works through **Setup**: classes, subjects, class lists, marksheets. No SQL
+from here on, and no further SSH.
+
+The two sign-in pages are separate on purpose. A platform account cannot sign
+into the school portal or the family app, and a school account cannot reach
+the console — they are different tables, and their session cookies are signed
+for different audiences, so neither token is usable in the other's place.
 
 ---
 
