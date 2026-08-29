@@ -107,13 +107,51 @@ running it again after adding a subject only fills the gaps.
 Setup is administration: only the DoS and school administrators see it. Office
 staff enter marks, they do not configure the school.
 
+## Deploying
+
+`ops/DEPLOY.md` is the runbook — every command, in order, for a server you
+paste into rather than reason about. `bash ops/deploy-school.sh` from your PC
+is the whole deploy: one SSH connection carrying one tar stream, because a
+deploy that looped scp/ssh once got the source IP filtered off port 22.
+
+Three things exist because the first deploy would otherwise fail in ways that
+are hard to see from the outside:
+
+**`ops/migrate.sh`** applies migrations against a ledger table. The old
+instruction was "run 001_init.sql", which silently stopped being the whole
+schema the moment there was an 002. Re-running is a no-op, so it is safe to
+run after every deploy.
+
+**`scripts/bootstrap-school.js`** creates the first school and its
+administrator. Nothing else can: `/setup` needs a session, and there is no
+account to sign in with on a fresh database. It is plain JavaScript, not
+TypeScript, because it runs inside the container where there is no build
+toolchain — and the image installs `mysql2` and `bcryptjs` separately for it,
+since Next's standalone output bundles what the app imports and leaves a
+plain `require` with nothing to find.
+
+**`/api/health`** answers the question `docker ps` cannot: the app is up,
+the database is reachable, the schema is applied, and the session secret is
+set. The usual first-deploy failure is a container that starts perfectly and
+cannot reach MySQL. It reports yes or no per check and never the reason — a
+public endpoint that says `Access denied for user 'school'@'172.18.0.4'` is a
+free map of the inside.
+
 ## Applying the schema
+
+On a server, use the runner — it keeps a ledger and applies only what is new:
+
+```bash
+bash /opt/apps/school/ops/migrate.sh
+```
+
+By hand, for a local database:
 
 ```bash
 docker exec -i mysql mysql -uroot -p -e 'CREATE DATABASE midway_school'
-docker exec -i mysql mysql -uroot -p midway_school < server/db/migrations/001_init.sql
-docker exec -i mysql mysql -uroot -p midway_school < server/db/migrations/002_subject_catalog.sql
-docker exec -i mysql mysql -uroot -p midway_school < server/db/migrations/003_family_invites.sql
+for f in server/db/migrations/*.sql; do
+  docker exec -i mysql mysql -uroot -p midway_school < "$f"
+done
 ```
 
 `002` loads the national subject catalogue — shared reference data every
