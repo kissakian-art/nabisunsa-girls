@@ -31,7 +31,14 @@ RUN npm install --no-audit --no-fund --omit=dev mysql2@^3.11.0 bcryptjs@^2.4.3
 
 FROM node:22-alpine AS runner
 WORKDIR /app
-ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=4500
+# HOSTNAME=0.0.0.0 is not decoration. Next's standalone server.js binds to
+# `process.env.HOSTNAME || '0.0.0.0'`, and Docker sets HOSTNAME to the
+# container id — which resolves to the container's own IP. The app then
+# listens there and nowhere else, so Caddy reaches it fine over the `web`
+# network while `docker exec school ... 127.0.0.1:4500` is refused. That made
+# the deploy's own health check report a failure on a perfectly healthy
+# deployment, which is worse than having no check at all.
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=4500 HOSTNAME=0.0.0.0
 RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
 
 COPY --from=builder /app/public ./public
