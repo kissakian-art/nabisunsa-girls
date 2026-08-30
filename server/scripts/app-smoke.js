@@ -1,6 +1,12 @@
 /**
  * The family app in a real browser, against a real server.
  *
+ * Start the app the way a build starts it — by naming the school, not by
+ * setting EXPO_PUBLIC_* variables, which no longer exist:
+ *
+ *   SCHOOL=nabisunsa-girls SCHOOL_ALLOW_HTTP=1 \
+ *     SCHOOL_API_OVERRIDE=http://127.0.0.1:4500 npx expo start --web --offline
+ *
  * Web is not the shipping target, but it is the same React tree the phone
  * runs, so it catches the things that matter: does a parent get in, does she
  * see her own child's released marks and nothing else.

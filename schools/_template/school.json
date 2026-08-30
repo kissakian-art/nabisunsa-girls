@@ -1,0 +1,16 @@
+{
+  "slug": "school-slug-here",
+  "name": "The School's Full Name",
+  "shortName": "Short Name",
+  "launcherName": "Short",
+  "motto": "",
+  "contactEmail": "admin@school.ac.ug",
+  "apiBaseUrl": "https://school.midwayug.com",
+  "androidPackage": "ug.midway.school.schoolslughere",
+  "easProjectId": "",
+  "colors": {
+    "primary": "#0F2042",
+    "accent": "#C9A84C",
+    "splashBackground": "#0F2042"
+  }
+}

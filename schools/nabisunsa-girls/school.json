@@ -1,0 +1,16 @@
+{
+  "slug": "nabisunsa-girls",
+  "name": "Nabisunsa Girls' Secondary School",
+  "shortName": "Nabisunsa",
+  "launcherName": "Nabisunsa",
+  "motto": "Empowerment Through Education",
+  "contactEmail": "admin@nabisunsagirls.ac.ug",
+  "apiBaseUrl": "https://school.midwayug.com",
+  "androidPackage": "ug.midway.school.nabisunsagirls",
+  "easProjectId": "",
+  "colors": {
+    "primary": "#0F2042",
+    "accent": "#C9A84C",
+    "splashBackground": "#0F2042"
+  }
+}

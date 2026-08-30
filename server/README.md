@@ -407,11 +407,12 @@ whether 14.2.x is still enough.
     npm run smoke:setup    onboarding a school from nothing
     npm run smoke:reports  report cards and print output
 
-`smoke:app` needs the Expo app running as well as the portal:
+`smoke:app` needs the Expo app running as well as the portal, started the
+way a build starts it — by naming the school:
 
 ```bash
-EXPO_OFFLINE=1 EXPO_PUBLIC_API_BASE_URL=http://127.0.0.1:4500 \
-  EXPO_PUBLIC_SCHOOL_SLUG=nabisunsa-girls npx expo start --web --offline
+EXPO_OFFLINE=1 SCHOOL=nabisunsa-girls SCHOOL_ALLOW_HTTP=1 \
+  SCHOOL_API_OVERRIDE=http://127.0.0.1:4500 npx expo start --web --offline
 ```
 
 It drives the web build, which is not what ships, but it is the same React

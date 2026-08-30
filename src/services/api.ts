@@ -20,12 +20,11 @@ const TOKEN_KEY = 'midway_session_token';
 /**
  * Where the server lives.
  *
- * A branded build points at the school's own host; development falls back to
- * a local server. This is public configuration, not a secret — unlike the
- * Gemini key it replaces.
+ * Baked in at build time from the school's own `school.json`, alongside the
+ * rest of its branding — see `constants/brand.ts`. Public configuration, not
+ * a secret, unlike the Gemini key it replaces.
  */
-export const API_BASE =
-  process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\/$/, '') || 'http://127.0.0.1:4500';
+export const API_BASE = Brand.apiBaseUrl;
 
 export class ApiError extends Error {
   constructor(

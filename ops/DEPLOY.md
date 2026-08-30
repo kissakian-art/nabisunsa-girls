@@ -108,7 +108,8 @@ docker exec -it school env ADMIN_PASSWORD='choose-a-long-one' \
 ```
 
 The slug matters either way: it is what the branded app sends with every
-sign-in, so it must match `EXPO_PUBLIC_SCHOOL_SLUG` in that school's build.
+sign-in, so it must match the `slug` in `schools/<slug>/school.json` in the
+app repository.
 
 ## 4. Check it
 
@@ -157,11 +158,11 @@ bad deploy can be undone by swapping it back and rebuilding.
 
 ## The mobile app points here
 
-The branded build needs, in its `.env`:
+The branded build reads `schools/<slug>/school.json` in the app repository:
 
-```
-EXPO_PUBLIC_API_BASE_URL=https://school.midwayug.com
-EXPO_PUBLIC_SCHOOL_SLUG=nabisunsa-girls
+```json
+{ "slug": "nabisunsa-girls", "apiBaseUrl": "https://school.midwayug.com" }
 ```
 
-The slug must be exactly the one the console shows for that school.
+The slug must be exactly the one the console shows for that school — the app
+sends it with every sign-in. Building an app is `BUILDING.md`.
