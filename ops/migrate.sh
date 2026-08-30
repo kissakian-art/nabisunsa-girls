@@ -16,7 +16,9 @@
 #   DB=midway_school DIR=/opt/apps/school/src/db/migrations bash ops/migrate.sh
 #
 # The root password is prompted for once, not passed on the command line
-# where it would sit in the shell history.
+# where it would sit in the shell history. A caller that already holds it
+# exports MYSQL_PWD and is not asked — which is what lets ops/deploy-school.sh
+# run this inside its single SSH connection, where a prompt could not work.
 
 set -euo pipefail
 
@@ -26,8 +28,13 @@ CONTAINER="${CONTAINER:-mysql}"
 
 [ -d "$DIR" ] || { echo "No migrations directory at $DIR" >&2; exit 1; }
 
-read -rsp "MySQL root password: " MYSQL_PWD
-echo
+# Only ask if the caller has not already supplied it. Asking unconditionally
+# would hang forever down a non-interactive pipe, which is exactly how the
+# deploy runs this.
+if [ -z "${MYSQL_PWD:-}" ]; then
+  read -rsp "MySQL root password: " MYSQL_PWD
+  echo
+fi
 export MYSQL_PWD
 
 run_sql() {
