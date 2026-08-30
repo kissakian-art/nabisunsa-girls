@@ -1,0 +1,19 @@
+# Line endings.
+#
+# The deploy tars the working tree straight onto a Linux server and runs the
+# shell scripts there. Git on Windows defaults to core.autocrlf=true, so
+# without this every .sh is checked out with CRLF and fails on the server the
+# moment bash reads it:
+#
+#   ops/migrate.sh: line 22: $'\r': command not found
+#   ops/migrate.sh: line 23: set: pipefail: invalid option name
+#
+# That is not hypothetical — it is what a deploy from a Windows checkout did,
+# and it stayed hidden only because the script that ran the migrations was a
+# copy that had never been through a git checkout.
+*.sh text eol=lf
+
+# Same reasoning: read by tools on the server, not by anything on Windows
+# that cares about CRLF.
+Dockerfile  text eol=lf
+*.sql       text eol=lf
