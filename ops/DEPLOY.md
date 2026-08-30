@@ -84,8 +84,6 @@ This time it builds and starts. It will say Caddy has no block yet — step 6.
 
 ## 5. The schema
 
-On the server:
-
 ```bash
 bash /opt/apps/school/ops/migrate.sh
 ```
@@ -94,6 +92,18 @@ It asks for the MySQL **root** password (not the school one) and applies only
 the migrations that have not been applied before. Run it after every deploy
 that changes the database; running it when nothing has changed prints
 "Schema already up to date" and does nothing.
+
+If the database was built by hand before this runner existed, it has the
+tables but no ledger, and the runner stops rather than re-running 001. Tell
+it how far that database already goes — the rest are applied normally:
+
+```bash
+ADOPT=003_family_invites.sql bash /opt/apps/school/ops/migrate.sh
+```
+
+Name the last migration the database really has. Adopting more than that
+leaves it permanently missing whatever was skipped, with a ledger saying
+otherwise.
 
 ## 6. Caddy
 
