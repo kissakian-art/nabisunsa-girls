@@ -15,13 +15,14 @@
     "smoke:families": "node scripts/families-smoke.js",
     "test:db": "jest server/db --forceExit",
     "smoke:app": "node scripts/app-smoke.js",
-    "smoke:push": "node scripts/push-smoke.js"
+    "smoke:push": "node scripts/push-smoke.js",
+    "smoke:platform": "node scripts/platform-smoke.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "bcryptjs": "^2.4.3",
     "mysql2": "^3.11.0",
-    "next": "14.2.15",
+    "next": "^14.2.35",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

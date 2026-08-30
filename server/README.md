@@ -107,6 +107,30 @@ running it again after adding a subject only fills the gaps.
 Setup is administration: only the DoS and school administrators see it. Office
 staff enter marks, they do not configure the school.
 
+## The Midway console
+
+`/platform` is Midway's own area: creating schools, suspending one that stops
+paying, and the platform's own staff. It is a separate login from every
+school's, backed by a separate table.
+
+**Both session types are signed with the same secret, and what keeps them
+apart is cryptographic rather than a field check.** The audience is mixed
+into the signed material (`domain/session-token.ts`), so a school token
+presented to the console fails the signature comparison — not a condition
+somebody could forget to write. `npm run smoke:platform` proves it by taking
+a real school session and presenting it as a platform cookie.
+
+**A console session is checked against the account on every request**, unlike
+a school session. Signed tokens cannot be withdrawn, so without that read,
+deactivating an administrator or changing a password would leave any open
+session working for its full four hours — which is exactly the window that
+matters, because the reason for doing either is usually that someone else has
+the credentials.
+
+**Nothing here sets anybody else's password.** Changing your own asks for the
+current one even though you are already signed in, so a session left open on
+an unlocked laptop is not enough to lock its owner out of the platform.
+
 ## Deploying
 
 `ops/DEPLOY.md` is the runbook — every command, in order, for a server you
@@ -346,12 +370,39 @@ parent in the head teacher's office, and the end of a contract.
 Questions are rate limited per account (in memory, so per instance; move it
 to shared storage if the portal is ever run as more than one).
 
+## Keeping Next up to date
+
+The portal runs Next 14.2.x, and 14.2.15 carried advisories rated critical —
+a denial of service through Server Actions, an authorization bypass in
+middleware, and information exposure from the dev server. It is on a public
+hostname holding student marks and parent contact details, so it stays
+patched.
+
+`npm audit` will offer to "fix" this by installing Next 16, which is two
+major versions and would be a rewrite of the deploy on a live portal. The
+answer is the latest 14.2.x, which is a patch-level move with no API change.
+
+What audit still reports afterwards is real but does not describe this app.
+Every remaining advisory needs the image optimizer, middleware, rewrites,
+i18n on the Pages Router, a custom server, the Edge runtime, or CSP nonces —
+and this portal uses none of them. That is worth re-checking rather than
+assuming if any of those are ever added:
+
+    grep -rl "next/image\|next/script" app lib
+    ls middleware.* ; grep -nE "rewrites|redirects|i18n|images" next.config.js
+
+The one to watch is cache poisoning of React Server Component responses,
+which needs a cache in front of the app. Caddy does not cache; Cloudflare
+with the orange cloud on would. Turning proxying on is the moment to revisit
+whether 14.2.x is still enough.
+
 ## Running the browser suites
 
     npm run smoke          portal: marks entry, verify, release
     npm run smoke:app      the family app itself, against this server
     npm run smoke:families access slips for parents
     npm run smoke:push     announcements and what a notification may say
+    npm run smoke:platform the Midway console, and who cannot reach it
     npm run smoke:api      mobile API and the advisor
     npm run smoke:setup    onboarding a school from nothing
     npm run smoke:reports  report cards and print output
