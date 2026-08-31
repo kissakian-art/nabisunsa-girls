@@ -1,32 +1,34 @@
 /**
  * What a parent sees when she opens the app.
  *
- * This screen replaces a 2,256-line one that switched between a student, a
- * teacher and an administrator view, and carried a hall of fame of invented
- * students with invented praise. Teachers and administrators work in the web
- * portal now, and nothing here is invented: every number comes from marks
- * the school has released.
+ * She opens it to ask one question — how is my daughter doing — so that
+ * answer is the first thing on the screen, in one number, above any
+ * navigation. Everything else is arranged beneath it in the order she would
+ * ask: which subjects, what the school has said, and then the two things
+ * worth doing next.
  *
- * The shape of the screen follows what a parent actually opens it for —
- * "how is she doing" — so that answer is at the top, in one number, before
- * any navigation.
+ * Nothing here is invented. Every number is a mark the school has released.
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  useColorScheme,
-} from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { FontAwesome5 } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { Colors, MaxContentWidth, Spacing } from '../../constants/theme';
+import {
+  AppHeader,
+  Badge,
+  Card,
+  Chip,
+  Divider,
+  Loading,
+  Notice,
+  PrimaryButton,
+  Screen,
+  SecondaryButton,
+  Space,
+  Type,
+  usePalette,
+} from '../../components/ui';
 import { useSession } from '../../services/session';
 import {
   getAnnouncements,
@@ -37,8 +39,7 @@ import {
 
 export default function Dashboard() {
   const router = useRouter();
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+  const c = usePalette();
   const { profile, activeChild, selectChild, stale, signOut } = useSession();
 
   const [results, setResults] = useState<ResultsPayload | null>(null);
@@ -85,292 +86,172 @@ export default function Dashboard() {
     released.length > 0
       ? released.reduce((sum, r) => sum + (r.finalScore ?? 0), 0) / released.length
       : null;
-
   const children = profile?.children ?? [];
 
   return (
-    <ScrollView
-      contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.gold} />
-      }
-    >
-      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+    <Screen onRefresh={onRefresh} refreshing={refreshing}>
+      <StatusBar style={c.scheme === 'dark' ? 'light' : 'dark'} />
 
-      <View style={styles.inner}>
-        {/* Who this is, and whose marks these are. */}
-        <View style={styles.header}>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.school, { color: colors.textSecondary }]}>
-              {profile?.school?.name ?? ''}
-            </Text>
-            <Text style={[styles.greeting, { color: colors.text }]}>
-              {profile?.user?.name ?? ''}
-            </Text>
-          </View>
-          <TouchableOpacity onPress={signOut} style={styles.signOut}>
-            <FontAwesome5 name="sign-out-alt" size={16} color={colors.textSecondary} />
-          </TouchableOpacity>
+      <AppHeader
+        school={profile?.school?.name}
+        title={profile?.user?.name ?? ''}
+        action={{ icon: 'sign-out-alt', onPress: signOut, label: 'Sign out' }}
+      />
+
+      {stale && <Notice tone="info">Showing what was saved on this phone — no connection.</Notice>}
+
+      {/* A parent with two daughters chooses between them. One child needs no
+          picker, so it is not shown. */}
+      {children.length > 1 && (
+        <View style={styles.children}>
+          {children.map((child) => (
+            <Chip
+              key={child.id}
+              testID={`child-${child.id}`}
+              label={child.firstName}
+              selected={child.id === activeChild?.id}
+              onPress={() => selectChild(child.id)}
+            />
+          ))}
         </View>
+      )}
 
-        {stale && (
-          <View style={[styles.banner, { backgroundColor: colors.champagne }]}>
-            <Text style={[styles.bannerText, { color: colors.text }]}>
-              Showing what was saved on this phone — no connection.
+      {loading ? (
+        <Loading />
+      ) : (
+        <>
+          {error ? <Notice tone="error">{error}</Notice> : null}
+
+          {/* The answer to the question the app is opened for. */}
+          <Card accent>
+            <Text style={[Type.overline, { color: c.textSecondary }]}>
+              {(results?.term?.name ?? 'No term yet').toUpperCase()}
             </Text>
-          </View>
-        )}
 
-        {/* A parent with two daughters chooses between them. One child needs
-            no picker, so it is not shown. */}
-        {children.length > 1 && (
-          <View style={styles.childRow}>
-            {children.map((child) => {
-              const active = child.id === activeChild?.id;
-              return (
-                <TouchableOpacity
-                  key={child.id}
-                  testID={`child-${child.id}`}
-                  onPress={() => selectChild(child.id)}
-                  style={[
-                    styles.childChip,
-                    {
-                      borderColor: active ? colors.gold : colors.textSecondary + '40',
-                      backgroundColor: active ? colors.champagne : 'transparent',
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.childChipText,
-                      { color: active ? colors.text : colors.textSecondary },
-                    ]}
-                  >
-                    {child.firstName}
+            {average == null ? (
+              <>
+                <Text style={[Type.title, { color: c.text, marginTop: Space.snug }]}>
+                  No marks released yet
+                </Text>
+                <Text style={[Type.caption, { color: c.textSecondary, marginTop: Space.tight }]}>
+                  Results appear here as the school releases each subject.
+                </Text>
+              </>
+            ) : (
+              <>
+                <View style={styles.scoreRow}>
+                  <Text style={[Type.display, { color: c.text }]}>{average.toFixed(1)}</Text>
+                  <Text style={[Type.label, { color: c.textSecondary, marginBottom: 7 }]}>
+                    average
                   </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
+                </View>
+                <Text style={[Type.caption, { color: c.textSecondary }]}>
+                  Across {released.length} subject{released.length === 1 ? '' : 's'} released so
+                  far this term
+                </Text>
+              </>
+            )}
 
-        {activeChild && (
-          <Text style={[styles.childLine, { color: colors.textSecondary }]}>
-            {activeChild.firstName} {activeChild.lastName} · {activeChild.className}
-            {activeChild.streamName ? ` ${activeChild.streamName}` : ''} ·{' '}
-            {activeChild.registrationNo}
-          </Text>
-        )}
+            {activeChild && (
+              <>
+                <View style={{ height: Space.gap }} />
+                <Divider />
+                <Text style={[Type.caption, { color: c.textSecondary, marginTop: Space.base }]}>
+                  {activeChild.firstName} {activeChild.lastName} · {activeChild.className}
+                  {activeChild.streamName ? ` ${activeChild.streamName}` : ''} ·{' '}
+                  {activeChild.registrationNo}
+                </Text>
+              </>
+            )}
+          </Card>
 
-        {loading ? (
-          <ActivityIndicator size="large" color={colors.gold} style={{ marginTop: Spacing.six }} />
-        ) : (
-          <>
-            {error ? (
-              <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
-                <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
-                <TouchableOpacity onPress={onRefresh}>
-                  <Text style={[styles.link, { color: colors.primary }]}>Try again</Text>
-                </TouchableOpacity>
-              </View>
-            ) : null}
-
-            {/* The answer to the question the app is opened for. */}
-            <View
-              style={[
-                styles.summary,
-                { backgroundColor: colors.backgroundElement, borderColor: colors.gold },
-              ]}
-            >
-              <Text style={[styles.summaryTerm, { color: colors.textSecondary }]}>
-                {results?.term?.name ?? 'No term yet'}
-              </Text>
-              {average == null ? (
-                <>
-                  <Text style={[styles.summaryEmpty, { color: colors.text }]}>
-                    No marks released yet
-                  </Text>
-                  <Text style={[styles.summaryHint, { color: colors.textSecondary }]}>
-                    Results appear here as the school releases each subject.
-                  </Text>
-                </>
-              ) : (
-                <>
-                  <Text style={[styles.summaryScore, { color: colors.text }]}>
-                    {average.toFixed(1)}
-                    <Text style={[styles.summaryUnit, { color: colors.textSecondary }]}>
-                      {' '}average
-                    </Text>
-                  </Text>
-                  <Text style={[styles.summaryHint, { color: colors.textSecondary }]}>
-                    Across {released.length} subject{released.length === 1 ? '' : 's'} released
-                    so far this term
-                  </Text>
-                </>
-              )}
-            </View>
-
-            {/* Subjects, plainly. No charts: a mark, a grade, a position. */}
-            {released.length > 0 && (
-              <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
-                <Text style={[styles.cardTitle, { color: colors.text }]}>Subjects</Text>
-                {released.map((subject) => (
-                  <View key={subject.subjectId} style={styles.subjectRow}>
+          {/* Subjects, plainly. A mark, a grade, a position — no charts. */}
+          {released.length > 0 && (
+            <Card title="Subjects">
+              {released.map((subject, index) => (
+                <View key={subject.subjectId}>
+                  {index > 0 && <Divider />}
+                  <View style={styles.subject}>
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.subjectName, { color: colors.text }]}>
+                      <Text style={[Type.body, { color: c.text, fontWeight: '600' }]}>
                         {subject.subjectName}
                       </Text>
                       {subject.position != null && (
-                        <Text style={[styles.subjectSub, { color: colors.textSecondary }]}>
+                        <Text style={[Type.caption, { color: c.textSecondary }]}>
                           Position {subject.position} of {subject.groupSize}
                         </Text>
                       )}
                     </View>
-                    <Text style={[styles.subjectScore, { color: colors.text }]}>
+                    <Text style={[Type.title, { color: c.text, marginRight: Space.base }]}>
                       {subject.finalScore}
                     </Text>
-                    <View style={[styles.gradePill, { backgroundColor: colors.champagne }]}>
-                      <Text style={[styles.gradeText, { color: colors.text }]}>
-                        {subject.grade ?? '—'}
-                      </Text>
-                    </View>
+                    <Badge label={subject.grade ?? '—'} />
                   </View>
-                ))}
-              </View>
-            )}
+                </View>
+              ))}
+            </Card>
+          )}
 
-            {/* What the school has said. Pinned first, newest after. */}
-            {announcements.length > 0 && (
-              <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
-                <Text style={[styles.cardTitle, { color: colors.text }]}>From the school</Text>
-                {announcements.slice(0, 4).map((note) => (
-                  <View key={note.id} style={styles.note}>
-                    <Text style={[styles.noteTitle, { color: colors.text }]}>
-                      {note.isPinned ? '📌 ' : ''}{note.title}
+          {announcements.length > 0 && (
+            <Card title="From the school">
+              {announcements.slice(0, 4).map((note, index) => (
+                <View key={note.id}>
+                  {index > 0 && <Divider />}
+                  <View style={styles.note}>
+                    <Text style={[Type.body, { color: c.text, fontWeight: '700' }]}>
+                      {note.title}
                     </Text>
-                    <Text style={[styles.noteBody, { color: colors.textSecondary }]}>
+                    <Text
+                      style={[Type.body, { color: c.textSecondary, marginTop: Space.tight }]}
+                    >
                       {note.body}
                     </Text>
                     {note.publishedAt ? (
-                      <Text style={[styles.noteDate, { color: colors.textSecondary }]}>
+                      <Text
+                        style={[Type.caption, { color: c.textSecondary, marginTop: Space.snug }]}
+                      >
                         {new Date(note.publishedAt).toLocaleDateString('en-GB', {
-                          day: 'numeric', month: 'long', year: 'numeric',
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
                         })}
                       </Text>
                     ) : null}
                   </View>
-                ))}
-              </View>
-            )}
+                </View>
+              ))}
+            </Card>
+          )}
 
-            {/* Two things to do next, not twelve. */}
-            <TouchableOpacity
+          {/* Two things to do next, not twelve. */}
+          <View style={{ marginTop: Space.snug }}>
+            <PrimaryButton
               testID="report-card"
-              style={[styles.action, { backgroundColor: colors.primary }]}
+              icon="file-alt"
+              label="Full report card"
               onPress={() => router.push('/report-card')}
-            >
-              <FontAwesome5 name="file-alt" size={16} color="#FFFFFF" />
-              <Text style={styles.actionText}>Full report card</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
+            />
+            <SecondaryButton
               testID="advisor"
-              style={[styles.actionOutline, { borderColor: colors.gold }]}
+              icon="comments"
+              label="Ask about her progress"
               onPress={() => router.push('/ai-chat')}
-            >
-              <FontAwesome5 name="comments" size={16} color={colors.gold} />
-              <Text style={[styles.actionOutlineText, { color: colors.text }]}>
-                Ask about her progress
-              </Text>
-            </TouchableOpacity>
+            />
+          </View>
 
-            <Text style={[styles.footnote, { color: colors.textSecondary }]}>
-              Only marks the school has released appear here.
-            </Text>
-          </>
-        )}
-      </View>
-    </ScrollView>
+          <Text style={[Type.caption, styles.footnote, { color: c.textSecondary }]}>
+            Only marks the school has released appear here.
+          </Text>
+        </>
+      )}
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    paddingVertical: Spacing.four,
-    paddingHorizontal: Spacing.three,
-    alignItems: 'center',
-  },
-  inner: { width: '100%', maxWidth: MaxContentWidth },
-  header: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: Spacing.three },
-  school: { fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase' },
-  greeting: { fontSize: 20, fontWeight: '800', marginTop: 2 },
-  signOut: { padding: Spacing.two },
-  banner: { borderRadius: Spacing.two, padding: Spacing.two, marginBottom: Spacing.three },
-  bannerText: { fontSize: 12 },
-  childRow: { flexDirection: 'row', gap: Spacing.two, marginBottom: Spacing.two },
-  childChip: {
-    borderWidth: 1,
-    borderRadius: 20,
-    paddingVertical: 6,
-    paddingHorizontal: Spacing.three,
-  },
-  childChipText: { fontSize: 13, fontWeight: '700' },
-  childLine: { fontSize: 12, marginBottom: Spacing.three },
-  summary: {
-    borderWidth: 1,
-    borderRadius: Spacing.three,
-    padding: Spacing.four,
-    marginBottom: Spacing.three,
-  },
-  summaryTerm: { fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase' },
-  summaryScore: { fontSize: 40, fontWeight: '800', marginTop: Spacing.one },
-  summaryUnit: { fontSize: 14, fontWeight: '600' },
-  summaryEmpty: { fontSize: 20, fontWeight: '700', marginTop: Spacing.one },
-  summaryHint: { fontSize: 12, marginTop: Spacing.one, lineHeight: 18 },
-  card: {
-    borderRadius: Spacing.three,
-    padding: Spacing.three,
-    marginBottom: Spacing.three,
-  },
-  cardTitle: { fontSize: 15, fontWeight: '700', marginBottom: Spacing.two },
-  subjectRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-    paddingVertical: Spacing.two,
-  },
-  subjectName: { fontSize: 14, fontWeight: '600' },
-  subjectSub: { fontSize: 11, marginTop: 2 },
-  subjectScore: { fontSize: 16, fontWeight: '700', minWidth: 34, textAlign: 'right' },
-  gradePill: { borderRadius: 12, paddingVertical: 3, paddingHorizontal: 10, minWidth: 34 },
-  gradeText: { fontSize: 13, fontWeight: '800', textAlign: 'center' },
-  action: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.two,
-    height: 50,
-    borderRadius: Spacing.two,
-    marginBottom: Spacing.two,
-  },
-  actionText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
-  actionOutline: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.two,
-    height: 50,
-    borderWidth: 1,
-    borderRadius: Spacing.two,
-    marginBottom: Spacing.three,
-  },
-  actionOutlineText: { fontSize: 14, fontWeight: '700' },
-  note: { paddingVertical: Spacing.two },
-  noteTitle: { fontSize: 14, fontWeight: '700' },
-  noteBody: { fontSize: 13, lineHeight: 19, marginTop: 3 },
-  noteDate: { fontSize: 11, marginTop: 4 },
-  errorText: { fontSize: 13, fontWeight: '600', marginBottom: Spacing.one },
-  link: { fontSize: 13, fontWeight: '700' },
-  footnote: { fontSize: 11, textAlign: 'center', marginBottom: Spacing.four },
+  children: { flexDirection: 'row', gap: Space.snug, marginBottom: Space.gap },
+  scoreRow: { flexDirection: 'row', alignItems: 'flex-end', gap: Space.snug, marginTop: Space.tight },
+  subject: { flexDirection: 'row', alignItems: 'center', paddingVertical: Space.base },
+  note: { paddingVertical: Space.base },
+  footnote: { textAlign: 'center', marginTop: Space.snug },
 });

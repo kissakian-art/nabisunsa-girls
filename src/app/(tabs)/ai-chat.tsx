@@ -1,387 +1,276 @@
-import { useEffect, useState, useRef } from 'react';
-import { StyleSheet, View, Text, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, useColorScheme, Platform, KeyboardAvoidingView } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Colors, Spacing, MaxContentWidth } from '../../constants/theme';
-import { useSession } from '../../services/session';
+/**
+ * The academic advisor.
+ *
+ * No context is assembled here. This screen used to build the advisor's
+ * entire system prompt on the phone — the student's grades, her combination,
+ * and a hard-coded table of university cut-off points. The cut-offs moved
+ * every year and were going stale inside an app nobody updates, and anything
+ * the app can compose, a modified app can compose differently: it could
+ * claim to be another student.
+ *
+ * Both now live on the server, which builds the prompt from the child's own
+ * released results. This screen sends a question and shows an answer.
+ */
+
+import { useEffect, useRef, useState } from 'react';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  ActivityIndicator,
+} from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import { Radius, Space, Type, usePalette } from '../../components/ui';
+import { MaxContentWidth } from '../../constants/theme';
+import { useSession } from '../../services/session';
 import { askAdvisor } from '../../services/api';
 
-interface ChatMessage {
+interface Message {
   id: string;
-  sender: 'user' | 'ai';
+  from: 'parent' | 'advisor';
   text: string;
-  timestamp: Date;
 }
 
-export default function AiChatScreen() {
-  const router = useRouter();
+const id = () => Math.random().toString(36).slice(2);
+
+export default function AdvisorScreen() {
+  const c = usePalette();
   const params = useLocalSearchParams();
-  const initialPrompt = params.initialPrompt as string;
-
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
-
+  const initialPrompt = params.initialPrompt as string | undefined;
   const { activeChild } = useSession();
 
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [inputText, setInputText] = useState('');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
+  const scroller = useRef<ScrollView>(null);
 
-  const scrollViewRef = useRef<ScrollView>(null);
+  const her = activeChild?.firstName;
 
-  // No context is assembled here any more.
-  //
-  // This screen used to build the advisor's entire system prompt on the
-  // phone — the student's grades, her combination, and a hard-coded table of
-  // university cut-off points. Two things were wrong with that. The cut-offs
-  // move every year and were quietly going stale in an app nobody updates,
-  // and anything the app can compose, the app can be made to compose
-  // differently: a modified client could claim to be another student.
-  //
-  // Both now live on the server, which builds the prompt from the child's own
-  // released results. The app sends a question and nothing else.
   useEffect(() => {
     setMessages([
       {
-        id: '1',
-        sender: 'ai',
-        text: activeChild
-          ? `Hello. I can talk about ${activeChild.firstName}'s results — how she is doing, where she is improving, and what to think about next. What would you like to know?`
+        id: 'greeting',
+        from: 'advisor',
+        text: her
+          ? `Hello. I can talk about ${her}'s results — how she is doing, where she is improving, and what to think about next.`
           : 'Hello. What would you like to know?',
-        timestamp: new Date(),
       },
     ]);
-  }, [activeChild]);
+  }, [her]);
 
-  // Handle trigger of initialPrompt if passed from course details screen
-  useEffect(() => {
-    if (initialPrompt && messages.length === 1) {
-      sendMessage(initialPrompt);
-    }
-  }, [initialPrompt, messages.length]);
+  const send = async (text: string) => {
+    const question = text.trim();
+    if (!question || sending) return;
 
-  // Unified sending mechanism
-  const sendMessage = async (textToSend: string) => {
-    if (!textToSend.trim() || sending) return;
-
-    const userMsg: ChatMessage = {
-      id: Math.random().toString(),
-      sender: 'user',
-      text: textToSend,
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMsg]);
-    setInputText('');
+    setMessages((prev) => [...prev, { id: id(), from: 'parent', text: question }]);
+    setDraft('');
     setSending(true);
-
-    // Scroll to bottom
-    setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+    setTimeout(() => scroller.current?.scrollToEnd({ animated: true }), 80);
 
     try {
-      // The advisor runs on the server. The app sends only the question and
-      // the conversation so far — who the student is, what her marks are, and
-      // what the advisor may say are all decided server-side.
-      //
-      // This used to call Gemini directly with EXPO_PUBLIC_GEMINI_API_KEY,
-      // which ships inside the APK and can be read by anyone who downloads it.
+      // The greeting is ours, not part of the conversation. The child is
+      // named so a parent with two daughters gets an answer about the one on
+      // screen; the server still checks that she is theirs.
       const history = messages
-        .slice(1) // the opening greeting is ours, not part of the conversation
-        .map(m => ({ role: m.sender === 'user' ? 'user' as const : 'model' as const, text: m.text }));
+        .filter((m) => m.id !== 'greeting')
+        .map((m) => ({ role: m.from === 'parent' ? ('user' as const) : ('model' as const), text: m.text }));
 
-      // The child is named so a parent with two daughters gets an answer
-      // about the one on screen. The server still checks that she is theirs.
-      const { reply } = await askAdvisor(textToSend, history, activeChild?.id);
-
-      setMessages(prev => [...prev, {
-        id: Math.random().toString(),
-        sender: 'ai',
-        text: reply,
-        timestamp: new Date(),
-      }]);
+      const { reply } = await askAdvisor(question, history, activeChild?.id);
+      setMessages((prev) => [...prev, { id: id(), from: 'advisor', text: reply }]);
     } catch (e: any) {
-      // Say something a parent can act on. The server never returns provider
-      // detail, so whatever arrives here is already safe to show.
-      setMessages(prev => [...prev, {
-        id: Math.random().toString(),
-        sender: 'ai',
-        text: e?.message || 'I could not reach the school right now. Please try again shortly.',
-        timestamp: new Date(),
-      }]);
+      // The server never returns provider detail, so whatever arrives here is
+      // already safe to show a parent.
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: id(),
+          from: 'advisor',
+          text: e?.message || 'I could not reach the school right now. Please try again shortly.',
+        },
+      ]);
     } finally {
       setSending(false);
-      setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+      setTimeout(() => scroller.current?.scrollToEnd({ animated: true }), 80);
     }
   };
 
-  return (
-    <KeyboardAvoidingView 
-      style={{ flex: 1, backgroundColor: colors.background }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 0}
-    >
-      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+  useEffect(() => {
+    if (initialPrompt && messages.length === 1) send(initialPrompt);
+  }, [initialPrompt, messages.length]);
 
-      {/* Nav Bar */}
-      <View style={[styles.navBar, { borderBottomColor: colors.gold + '40', backgroundColor: colors.backgroundElement }]}>
-        <TouchableOpacity style={[styles.backBtn, { borderColor: colors.gold }]} onPress={() => router.back()}>
-          <FontAwesome5 name="arrow-left" size={14} color={colors.gold} />
-        </TouchableOpacity>
-        <View style={styles.navTitleWrapper}>
-          <Text style={[styles.navTitle, { color: colors.text }]}>Academic advisor</Text>
-          <Text style={[styles.navSub, { color: colors.gold }]}>
-            {activeChild ? `About ${activeChild.firstName}` : ''}
+  const suggestions = [
+    'Which subjects should she focus on this term?',
+    'How has she improved compared with last term?',
+    'What kind of courses suit her strengths?',
+  ];
+
+  return (
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: c.background }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <StatusBar style={c.scheme === 'dark' ? 'light' : 'dark'} />
+
+      <View style={[styles.header, { borderBottomColor: c.border, backgroundColor: c.backgroundElement }]}>
+        <View style={styles.headerInner}>
+          <Text style={[Type.overline, { color: c.gold }]}>ACADEMIC ADVISOR</Text>
+          <Text style={[Type.title, { color: c.text, marginTop: Space.hair }]}>
+            {her ? `About ${her}` : 'Ask a question'}
           </Text>
         </View>
-        <View style={{ width: 40 }} />
       </View>
 
-      {/* Suggested Chips (Quick-question actions) */}
-      {messages.length === 1 && (
-        <View style={styles.chipsSection}>
-          <Text style={[styles.chipsTitle, { color: colors.gold }]}>Suggested Inquiries:</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsScroll}>
-            <TouchableOpacity 
-              style={[styles.suggestChip, { backgroundColor: colors.backgroundElement, borderColor: colors.gold }]}
-              onPress={() => sendMessage('Which subjects should she focus on this term?')}
-            >
-              <Text style={[styles.chipText, { color: colors.text }]}>Where to focus?</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={[styles.suggestChip, { backgroundColor: colors.backgroundElement, borderColor: colors.gold }]}
-              onPress={() => sendMessage('How has she improved compared with last term?')}
-            >
-              <Text style={[styles.chipText, { color: colors.text }]}>Is she improving?</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={[styles.suggestChip, { backgroundColor: colors.backgroundElement, borderColor: colors.gold }]}
-              onPress={() => sendMessage('What kind of courses suit her strengths?')}
-            >
-              <Text style={[styles.chipText, { color: colors.text }]}>What suits her?</Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
-      )}
-
-      {/* Messaging Area */}
-      <ScrollView 
-        ref={scrollViewRef}
-        style={styles.messagesScroll}
-        contentContainerStyle={styles.messagesContainer}
+      <ScrollView
+        ref={scroller}
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.thread}
       >
-        {messages.map((m) => {
-          const isAi = m.sender === 'ai';
-          return (
-            <View 
-              key={m.id} 
-              style={[
-                styles.bubbleWrapper, 
-                isAi ? styles.aiWrapper : styles.userWrapper
-              ]}
-            >
-              {isAi && (
-                <View style={[styles.aiAvatar, { backgroundColor: colors.champagne }]}>
-                  <FontAwesome5 name="user-graduate" size={10} color={colors.gold} />
-                </View>
-              )}
-              <View 
-                style={[
-                  styles.bubble, 
-                  isAi 
-                    ? [styles.aiBubble, { backgroundColor: colors.backgroundElement, borderColor: colors.gold + '40' }]
-                    : [styles.userBubble, { backgroundColor: colors.primary }]
-                ]}
+        <View style={styles.column}>
+          {messages.map((message) => {
+            const fromAdvisor = message.from === 'advisor';
+            return (
+              <View
+                key={message.id}
+                style={[styles.row, fromAdvisor ? styles.left : styles.right]}
               >
-                <Text 
+                <View
                   style={[
-                    styles.bubbleText, 
-                    { color: isAi ? colors.text : '#FFFFFF' }
+                    styles.bubble,
+                    fromAdvisor
+                      ? { backgroundColor: c.backgroundElement, borderColor: c.border, borderWidth: 1 }
+                      : { backgroundColor: c.primary },
                   ]}
                 >
-                  {m.text}
-                </Text>
+                  <Text
+                    style={[
+                      Type.body,
+                      { color: fromAdvisor ? c.text : c.onPrimary },
+                    ]}
+                  >
+                    {message.text}
+                  </Text>
+                </View>
+              </View>
+            );
+          })}
+
+          {sending && (
+            <View style={[styles.row, styles.left]}>
+              <View
+                style={[
+                  styles.bubble,
+                  styles.thinking,
+                  { backgroundColor: c.backgroundElement, borderColor: c.border, borderWidth: 1 },
+                ]}
+              >
+                <ActivityIndicator size="small" color={c.gold} />
               </View>
             </View>
-          );
-        })}
+          )}
 
-        {sending && (
-          <View style={[styles.bubbleWrapper, styles.aiWrapper]}>
-            <View style={[styles.aiAvatar, { backgroundColor: colors.champagne }]}>
-              <FontAwesome5 name="user-graduate" size={10} color={colors.gold} />
+          {/* Only before the first question: afterwards they are clutter. */}
+          {messages.length === 1 && (
+            <View style={styles.suggestions}>
+              {suggestions.map((suggestion) => (
+                <TouchableOpacity
+                  key={suggestion}
+                  onPress={() => send(suggestion)}
+                  style={[styles.suggestion, { borderColor: c.border, backgroundColor: c.backgroundElement }]}
+                >
+                  <Text style={[Type.body, { color: c.text }]}>{suggestion}</Text>
+                  <FontAwesome5 name="arrow-right" size={11} color={c.gold} />
+                </TouchableOpacity>
+              ))}
             </View>
-            <View style={[styles.bubble, styles.aiBubble, { backgroundColor: colors.backgroundElement, borderColor: colors.gold + '40', paddingVertical: 12 }]}>
-              <ActivityIndicator size="small" color={colors.gold} />
-            </View>
-          </View>
-        )}
+          )}
+        </View>
       </ScrollView>
 
-      {/* Bottom Form Entry */}
-      <View style={[styles.inputForm, { borderTopColor: colors.gold + '40', backgroundColor: colors.backgroundElement }]}>
-        <TextInput
-          style={[styles.inputField, { color: colors.text, backgroundColor: colors.background, borderColor: colors.gold }]}
-          placeholder="Ask counselor a question e.g. What about Law?"
-          placeholderTextColor={colors.textSecondary + '80'}
-          value={inputText}
-          onChangeText={setInputText}
-          multiline
-        />
-        <TouchableOpacity 
-          style={[styles.sendBtn, { backgroundColor: colors.primary }]}
-          onPress={() => sendMessage(inputText)}
-          disabled={sending || !inputText.trim()}
-        >
-          <FontAwesome5 name="paper-plane" size={14} color="#FFFFFF" />
-        </TouchableOpacity>
+      <View style={[styles.composer, { borderTopColor: c.border, backgroundColor: c.backgroundElement }]}>
+        <View style={[styles.composerInner]}>
+          <TextInput
+            style={[styles.input, { color: c.text, borderColor: c.border, backgroundColor: c.background }]}
+            placeholder={her ? `Ask about ${her}…` : 'Ask a question…'}
+            placeholderTextColor={c.textSecondary + '99'}
+            value={draft}
+            onChangeText={setDraft}
+            onSubmitEditing={() => send(draft)}
+            multiline
+          />
+          <TouchableOpacity
+            onPress={() => send(draft)}
+            disabled={sending || !draft.trim()}
+            style={[
+              styles.send,
+              { backgroundColor: draft.trim() ? c.primary : c.border },
+            ]}
+          >
+            <FontAwesome5 name="paper-plane" size={14} color={c.onPrimary} />
+          </TouchableOpacity>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  loading: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+  header: { borderBottomWidth: 1, paddingVertical: Space.gap, alignItems: 'center' },
+  headerInner: { width: '100%', maxWidth: MaxContentWidth, paddingHorizontal: Space.gap },
+  thread: { padding: Space.gap, alignItems: 'center' },
+  column: { width: '100%', maxWidth: MaxContentWidth },
+  row: { flexDirection: 'row', marginBottom: Space.base },
+  left: { justifyContent: 'flex-start' },
+  right: { justifyContent: 'flex-end' },
+  bubble: {
+    // The width cap is the point: without it a long answer runs off the edge
+    // of the screen, which is what this used to do.
+    maxWidth: '85%',
+    borderRadius: Radius.card,
+    paddingVertical: Space.base,
+    paddingHorizontal: Space.gap,
   },
-  navBar: {
+  thinking: { paddingVertical: Space.gap, paddingHorizontal: Space.section },
+  suggestions: { marginTop: Space.snug, gap: Space.snug },
+  suggestion: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing.four,
-    paddingTop: Platform.OS === 'ios' ? 50 : 20,
-    paddingBottom: Spacing.two,
-    borderBottomWidth: 1,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    justifyContent: 'space-between',
+    gap: Space.base,
     borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: Radius.control,
+    paddingVertical: Space.base,
+    paddingHorizontal: Space.gap,
   },
-  navTitleWrapper: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  navTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  navSub: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-    marginTop: 1,
-  },
-  chipsSection: {
-    paddingTop: Spacing.three,
-    paddingBottom: Spacing.one,
-  },
-  chipsTitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    paddingHorizontal: Spacing.four,
-    marginBottom: 6,
-    textTransform: 'uppercase',
-  },
-  chipsScroll: {
-    paddingHorizontal: Spacing.four,
-  },
-  suggestChip: {
-    borderWidth: 1,
-    borderRadius: 20,
-    paddingVertical: 6,
-    paddingHorizontal: Spacing.three,
-    marginRight: Spacing.two,
-  },
-  chipText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  messagesScroll: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-  },
-  messagesContainer: {
-    paddingVertical: Spacing.four,
-    alignSelf: 'center',
+  composer: { borderTopWidth: 1, paddingVertical: Space.base, alignItems: 'center' },
+  composerInner: {
     width: '100%',
     maxWidth: MaxContentWidth,
-  },
-  bubbleWrapper: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: Spacing.three,
-    width: '85%',
+    alignItems: 'flex-end',
+    gap: Space.snug,
+    paddingHorizontal: Space.gap,
   },
-  aiWrapper: {
-    alignSelf: 'flex-start',
-  },
-  userWrapper: {
-    alignSelf: 'flex-end',
-    justifyContent: 'flex-end',
-  },
-  aiAvatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.two,
-    marginTop: 4,
-  },
-  bubble: {
-    borderRadius: Spacing.three,
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.01,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  aiBubble: {
-    borderWidth: 1,
-    borderTopLeftRadius: 0,
-  },
-  userBubble: {
-    borderTopRightRadius: 0,
-  },
-  bubbleText: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  inputForm: {
-    flexDirection: 'row',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.three,
-    borderTopWidth: 1,
-    alignItems: 'center',
-    gap: Spacing.two,
-  },
-  inputField: {
+  input: {
     flex: 1,
     borderWidth: 1,
-    borderRadius: 20,
-    height: 40,
-    paddingHorizontal: Spacing.three,
-    fontSize: 13,
-    maxHeight: 80,
+    borderRadius: Radius.control,
+    paddingHorizontal: Space.base,
+    paddingVertical: Space.base,
+    fontSize: 15,
+    maxHeight: 120,
   },
-  sendBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  send: {
+    width: 46,
+    height: 46,
+    borderRadius: Radius.control,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowOpacity: 0.1,
-    elevation: 2,
   },
 });

@@ -69,7 +69,9 @@ const check = (name, ok, detail = '') => {
   const body = await page.textContent('body');
 
   check('the parent is greeted by name', /Nakato/.test(body || ''));
-  check('the term is named', /Term 3 2026/.test(body || ''));
+  // Case-insensitive: the term is a label on the dashboard and reads as an
+  // overline in capitals. What matters is that it is named at all.
+  check('the term is named', /term 3 2026/i.test(body || ''));
   check('an average is shown', /average/i.test(body || ''));
   check('released subjects are listed', /Biology/.test(body || '') && /History/.test(body || ''));
   check('unreleased subjects are not', !/English Language/.test(body || ''),

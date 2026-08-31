@@ -1,7 +1,6 @@
 import { Tabs } from 'expo-router';
-import { Platform, useColorScheme } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { Colors } from '../../constants/theme';
+import { usePalette } from '../../components/ui';
 
 /**
  * Three tabs, which is the whole app.
@@ -17,24 +16,29 @@ import { Colors } from '../../constants/theme';
  * full card, and someone to ask.
  */
 export default function TabLayout() {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+  const c = usePalette();
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.gold,
-        tabBarInactiveTintColor: scheme === 'dark' ? '#8E9AA7' : '#B9C2CE',
+        tabBarActiveTintColor: c.gold,
+        tabBarInactiveTintColor: '#8FA0B8',
         tabBarStyle: {
-          backgroundColor: scheme === 'dark' ? '#0E1B30' : '#0F2042',
-          borderTopWidth: 1.5,
-          borderTopColor: colors.gold,
-          height: Platform.OS === 'ios' ? 88 : 64,
-          paddingBottom: Platform.OS === 'ios' ? 30 : 10,
+          backgroundColor: c.primary,
+          borderTopWidth: 1,
+          borderTopColor: c.gold,
+          // Height and padding together, and generous: an icon, a label
+          // beneath it, and whatever safe-area inset the device adds on top.
+          // Too little and the navigator drops the labels entirely; too
+          // little in a different way and they are clipped by the screen
+          // edge. Both were seen before this settled.
+          height: 78,
           paddingTop: 10,
+          paddingBottom: 14,
         },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600', letterSpacing: 0.3 },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600', letterSpacing: 0.2 },
+        tabBarLabelPosition: 'below-icon',
       }}
     >
       <Tabs.Screen
@@ -42,7 +46,7 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color, size }) => (
-            <FontAwesome5 name="home" size={size - 2} color={color} />
+            <FontAwesome5 name="home" size={size - 4} color={color} />
           ),
         }}
       />
@@ -51,7 +55,7 @@ export default function TabLayout() {
         options={{
           title: 'Report card',
           tabBarIcon: ({ color, size }) => (
-            <FontAwesome5 name="file-alt" size={size - 2} color={color} />
+            <FontAwesome5 name="file-alt" size={size - 4} color={color} />
           ),
         }}
       />
@@ -60,7 +64,7 @@ export default function TabLayout() {
         options={{
           title: 'Advisor',
           tabBarIcon: ({ color, size }) => (
-            <FontAwesome5 name="comments" size={size - 2} color={color} />
+            <FontAwesome5 name="comments" size={size - 4} color={color} />
           ),
         }}
       />
