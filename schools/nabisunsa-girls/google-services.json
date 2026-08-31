@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "11532557195",
+    "project_id": "nabisunsa-girls-school",
+    "storage_bucket": "nabisunsa-girls-school.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:11532557195:android:7618bed0ae19fca6722d8e",
+        "android_client_info": {
+          "package_name": "ug.midway.school.nabisunsagirls"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB1wJmfBeCIFAcjky2iEbmyz6o5n3VlVA4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
