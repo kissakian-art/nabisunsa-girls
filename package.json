@@ -43,12 +43,12 @@
     "typescript": "~5.9.2"
   },
   "scripts": {
-    "start": "SCHOOL=${SCHOOL:-nabisunsa-girls} expo start",
+    "start": "node scripts/start.js",
     "test": "jest",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "SCHOOL=${SCHOOL:-nabisunsa-girls} expo start --web",
+    "web": "node scripts/start.js --web",
     "lint": "expo lint",
     "test:server": "jest --config jest.server.config.js",
     "schools:check": "node scripts/check-schools.js"

@@ -1,21 +1,27 @@
 {
   "cli": { "version": ">= 5.0.0", "appVersionSource": "remote" },
   "build": {
-    "production": {
+    "base-production": {
       "android": { "buildType": "app-bundle" },
-      "autoIncrement": true,
-      "env": {},
-      "comment": "The build that goes to Google Play. SCHOOL must be set on the command line: SCHOOL=nabisunsa-girls eas build -p android --profile production"
+      "autoIncrement": true
     },
-    "preview": {
+    "base-preview": {
       "distribution": "internal",
-      "android": { "buildType": "apk" },
-      "comment": "An APK to sideload onto a real phone — how a school first sees its own app before anything reaches Play."
+      "android": { "buildType": "apk" }
     },
-    "development": {
+    "base-development": {
       "developmentClient": true,
       "distribution": "internal",
       "android": { "buildType": "apk" }
+    },
+
+    "nabisunsa-girls": {
+      "extends": "base-preview",
+      "env": { "SCHOOL": "nabisunsa-girls" }
+    },
+    "nabisunsa-girls-production": {
+      "extends": "base-production",
+      "env": { "SCHOOL": "nabisunsa-girls" }
     }
   },
   "submit": { "production": {} }

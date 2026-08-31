@@ -6,29 +6,43 @@ server it talks to — comes from `schools/<slug>/school.json`.
 
 ```bash
 npm run schools:check                  # before, not after
-SCHOOL=nabisunsa-girls npx eas build --platform android --profile preview
+npx eas build --platform android --profile nabisunsa-girls
 ```
 
-`preview` produces an APK you can put on a real phone. `production` produces
-the app bundle Google Play wants. Nothing else changes between them.
+**The profile names the school**, not a shell variable. EAS evaluates
+`app.config.js` on its own build servers, where a variable you exported on
+your laptop does not exist — so the school travels in `eas.json`, where the
+build server can read it. It also means the command is identical on Windows,
+where `SCHOOL=x npx eas build` is not valid syntax at all.
+
+Each school gets two profiles: `<slug>` builds an APK you can put on a real
+phone, `<slug>-production` builds the app bundle Google Play wants. Nothing
+else differs between them. `npm run schools:check` refuses a school that has
+neither.
 
 ## Running it locally
 
 ```bash
-npm start                              # defaults to nabisunsa-girls
-SCHOOL=seeta-high npm start            # or name one
+npm install
+npm start                                # the only school, or the first
+npm start -- --school seeta-high         # name one
+npm start -- --web                       # anything else goes to expo
 ```
+
+Windows, macOS and Linux all the same — `npm start` runs a small Node script
+rather than shell syntax, for the same reason as above.
 
 Against a portal on this machine rather than the real one:
 
 ```bash
-SCHOOL=nabisunsa-girls SCHOOL_ALLOW_HTTP=1 \
-  SCHOOL_API_OVERRIDE=http://127.0.0.1:4500 npm start
+npm start -- --school nabisunsa-girls
 ```
 
-`SCHOOL_API_OVERRIDE` is refused during an EAS build. An app shipped pointing
-at 127.0.0.1 works perfectly on the machine that built it and on no parent's
-phone, so that mistake is made impossible rather than documented.
+with `SCHOOL_ALLOW_HTTP=1` and `SCHOOL_API_OVERRIDE=http://127.0.0.1:4500`
+set in the environment. The override is refused during an EAS build: an app
+shipped pointing at 127.0.0.1 works perfectly on the machine that built it
+and on no parent's phone, so that mistake is made impossible rather than
+documented.
 
 ## A new school, end to end
 
@@ -44,9 +58,11 @@ phone, so that mistake is made impossible rather than documented.
    `google-services.json`, and a service-account key that must never be
    committed and is uploaded to Expo instead. Without this the app runs and
    notifications silently never arrive. Budget an hour.
-5. `SCHOOL=<slug> npx eas init` — creates the EAS project. Put the id it
-   prints into `easProjectId` in `school.json`.
-6. `npm run schools:check`, then build.
+5. Add two build profiles to `eas.json`, copying the Nabisunsa pair and
+   changing the slug. Without them EAS builds the wrong school, or refuses.
+6. `npx eas init` — creates the EAS project. Put the id it prints into
+   `easProjectId` in `school.json`.
+7. `npm run schools:check`, then build.
 
 ## Why the package name can never change
 

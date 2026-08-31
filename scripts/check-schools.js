@@ -16,6 +16,7 @@ const fs = require('fs');
 const path = require('path');
 
 const SCHOOLS = path.join(__dirname, '..', 'schools');
+const EAS = path.join(__dirname, '..', 'eas.json');
 const PACKAGE_PATTERN = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/;
 
 let problems = 0;
@@ -36,6 +37,22 @@ if (folders.length === 0) {
 }
 
 console.log(`\n${folders.length} school(s) configured\n`);
+
+/**
+ * EAS evaluates app.config.js on its own build servers, where a shell
+ * variable set on a laptop does not exist. So each school's SCHOOL is
+ * carried in an eas.json build profile instead — and a school added without
+ * one fails on EAS with "Branded build refused", minutes into a build,
+ * rather than here.
+ */
+let profiles = {};
+try {
+  profiles = JSON.parse(fs.readFileSync(EAS, 'utf8')).build || {};
+} catch (error) {
+  problem('eas.json', `could not be read — ${error.message}`);
+}
+const profileFor = (slug) =>
+  Object.entries(profiles).filter(([, p]) => p.env && p.env.SCHOOL === slug);
 
 const packages = new Map();
 const slugs = new Map();
@@ -85,6 +102,11 @@ for (const folder of folders) {
     else slugs.set(school.slug, folder);
   }
 
+  const theirProfiles = profileFor(folder);
+  if (theirProfiles.length === 0) {
+    problem(folder, 'no eas.json build profile sets SCHOOL to this slug');
+  }
+
   // Not problems: an app builds and runs without any of these. They are the
   // difference between a test build and one a school would put its name on.
   if (!fs.existsSync(path.join(dir, 'icon.png'))) {
@@ -95,6 +117,9 @@ for (const folder of folders) {
   }
   if (!school.easProjectId) {
     note(folder, 'no easProjectId — set it after creating the EAS project');
+  }
+  if (theirProfiles.length) {
+    note(folder, `build with:  npx eas build -p android --profile ${theirProfiles[0][0]}`);
   }
   console.log('');
 }
