@@ -9,6 +9,18 @@ dist/
 web-build/
 expo-env.d.ts
 
+# Firebase service-account keys — NEVER commit one.
+#
+# `google-services.json` is different and IS committed per school: it only
+# identifies the app to FCM and is designed to ship inside the APK.
+#
+# A service-account key is the opposite. It can send a notification to every
+# parent at that school, and read anything else the project holds. It is
+# uploaded to Expo once, for push, and then belongs in a password manager.
+*-firebase-adminsdk-*.json
+service-account*.json
+firebase-adminsdk*.json
+
 # Native
 .kotlin/
 *.orig.*

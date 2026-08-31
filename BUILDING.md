@@ -39,10 +39,11 @@ phone, so that mistake is made impossible rather than documented.
 3. Drop in `icon.png`, `adaptive-icon.png` and `splash.png`. Without them the
    app builds with Midway's default icon, which is fine for a test and not
    for Google Play, where the badge is the entire point.
-4. **Firebase**, once per school: create a project, add an Android app with
-   that school's package name, download `google-services.json` into the
-   school's folder. Android push is delivered through FCM, so without this
-   the app runs and notifications silently never arrive. Budget an hour.
+4. **Firebase**, once per school — see `docs/FIREBASE-PUSH.md` for the exact
+   clicks. Two files come out of it and they are opposites: the committed
+   `google-services.json`, and a service-account key that must never be
+   committed and is uploaded to Expo instead. Without this the app runs and
+   notifications silently never arrive. Budget an hour.
 5. `SCHOOL=<slug> npx eas init` — creates the EAS project. Put the id it
    prints into `easProjectId` in `school.json`.
 6. `npm run schools:check`, then build.
