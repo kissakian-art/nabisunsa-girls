@@ -19,6 +19,34 @@ export interface GradingScaleEntry {
   points?: number | null;
 }
 
+/**
+ * Where the formative mark comes from.
+ *
+ * 'computed' averages coursework scores out of 100 and weights them.
+ *
+ * 'entered' takes the mark the office typed, already out of caWeight — the
+ * number a teacher wrote on a paper marksheet. Nabisunsa's report shows that
+ * column holding 20, 18, 17, 14, 11, 10; one subject has 20 out of 20 beside
+ * an exam of 46 out of 80. That is judgement, not arithmetic, and nobody at
+ * the school could state a rule for it because there is not one.
+ *
+ * A system that computes that number owns it, and spends every term arguing
+ * about arithmetic with the person whose judgement is the actual input. So
+ * it can be an input.
+ */
+export type FormativeSource = 'computed' | 'entered';
+
+/**
+ * What an unsat exam means.
+ *
+ * 'excluded' leaves the result incomplete until the paper is sat — the
+ * kinder reading, and the default.
+ *
+ * 'zero' scores it as nothing. Nabisunsa's report does this: French shows
+ * formative 11, no exam, total 11, grade E. Neither is a bug; it is policy.
+ */
+export type MissingExamRule = 'excluded' | 'zero';
+
 export interface GradingConfig {
   /** Coursework weight as a percentage. Must sum to 100 with eotWeight. */
   caWeight: number;
@@ -27,8 +55,14 @@ export interface GradingConfig {
   /**
    * Average only the best N coursework scores. Nabisunsa uses 3.
    * null/undefined averages all of them.
+   *
+   * Ignored when formativeSource is 'entered': there is nothing to take the
+   * best of, and dropping the office's lower entries would silently rewrite
+   * a mark the school decided.
    */
   caBestOf?: number | null;
+  formativeSource?: FormativeSource;
+  missingExamRule?: MissingExamRule;
   scale: GradingScaleEntry[];
 }
 
@@ -38,8 +72,12 @@ export type CourseworkScore = number | null;
 export interface SubjectMarkInput {
   studentId: number;
   subjectId: number;
+  /**
+   * Coursework scores. Out of 100 when formativeSource is 'computed'; out of
+   * caWeight when it is 'entered', because that is what the office typed.
+   */
   coursework: CourseworkScore[];
-  /** End-of-term exam. `null` means the student did not sit it. */
+  /** End-of-term exam, out of 100. `null` means the student did not sit it. */
   endOfTerm: number | null;
 }
 
@@ -48,8 +86,13 @@ export type IncompleteReason = 'no-exam-score' | 'no-scores-at-all';
 export interface SubjectResult {
   studentId: number;
   subjectId: number;
-  /** Averaged coursework, or null when none was recorded. */
+  /**
+   * The formative mark. Out of 100 for a 'computed' school, out of caWeight
+   * for an 'entered' one — `caOutOf` says which, so a report card can label
+   * it rather than guess.
+   */
   caScore: number | null;
+  caOutOf: number;
   eotScore: number | null;
   /** Weighted total, or null when it cannot be computed. */
   finalScore: number | null;
@@ -169,7 +212,13 @@ export function computeSubjectResult(
 ): SubjectResult {
   assertValidConfig(config);
 
-  const caScore = averageCoursework(input.coursework, config.caBestOf);
+  const entered = config.formativeSource === 'entered';
+  const caOutOf = entered ? config.caWeight : 100;
+
+  // Best-of-N is a rule for picking among several coursework attempts. An
+  // entered mark is one number the school decided, so there is nothing to
+  // choose between and dropping anything would rewrite their decision.
+  const caScore = averageCoursework(input.coursework, entered ? null : config.caBestOf);
   const eotScore =
     input.endOfTerm != null && Number.isFinite(input.endOfTerm) ? input.endOfTerm : null;
 
@@ -177,10 +226,13 @@ export function computeSubjectResult(
     studentId: input.studentId,
     subjectId: input.subjectId,
     caScore,
+    caOutOf,
     eotScore,
   };
 
-  if (eotScore == null) {
+  const zeroForMissingExam = config.missingExamRule === 'zero';
+
+  if (eotScore == null && !zeroForMissingExam) {
     return {
       ...base,
       finalScore: null,
@@ -190,12 +242,33 @@ export function computeSubjectResult(
     };
   }
 
-  // Coursework absent entirely: the exam carries the full result rather than
+  // Nothing at all, under either rule: there is no mark to publish.
+  if (eotScore == null && caScore == null) {
+    return {
+      ...base,
+      finalScore: null,
+      grade: null,
+      points: null,
+      incomplete: 'no-scores-at-all',
+    };
+  }
+
+  // Both components are reduced to points out of their own weight, then
+  // added. Keeping them in the same unit is what lets an entered mark (out
+  // of 20) and an exam (out of 100) meet without one being silently
+  // rescaled into the other's scale.
+  const examPoints = ((eotScore ?? 0) * config.eotWeight) / 100;
+
+  // Formative absent entirely: the exam carries the full result rather than
   // dragging the student down with a zero they never earned.
-  const effectiveCa = caScore ?? eotScore;
-  const finalScore = round2(
-    (effectiveCa * config.caWeight + eotScore * config.eotWeight) / 100,
-  );
+  const formativePoints =
+    caScore != null
+      ? entered
+        ? caScore
+        : (caScore * config.caWeight) / 100
+      : ((eotScore ?? 0) * config.caWeight) / 100;
+
+  const finalScore = round2(formativePoints + examPoints);
   const entry = gradeFor(finalScore, config.scale);
 
   return {

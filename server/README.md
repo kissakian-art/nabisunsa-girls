@@ -65,6 +65,24 @@ combinations and their entry requirements. Nabisunsa's 20/80 and "best 3"
 are data, not code — the tests prove the same marks produce different results
 under a second school's configuration.
 
+**The formative mark can be an input rather than a calculation.** Two schools
+both using 20/80 can still disagree about everything underneath it.
+Nabisunsa's report shows a formative column holding 20, 18, 17, 14, 11, 10 —
+whole numbers, one subject scoring 20 out of 20 beside an exam of 46 out of
+80. That is a teacher's judgement written down, and nobody at the school
+could state the arithmetic because there is none.
+
+So `formative_source` is `computed` (average the coursework, optionally the
+best N, out of 100) or `entered` (the office types one mark already out of
+`ca_weight`, straight off the paper marksheet). A system that computes that
+number owns it, and would spend every term arguing arithmetic with the person
+whose judgement is the actual input.
+
+**An unsat exam is policy, not a bug.** The same report shows French with a
+formative mark, no exam, a total equal to the formative mark, and an E. That
+school scores an unsat paper as zero; this system's default excludes it and
+leaves the subject unmarked. `missing_exam_rule` picks. Both are real.
+
 ## Running the tests
 
 Domain logic needs nothing:
@@ -403,6 +421,7 @@ whether 14.2.x is still enough.
     npm run smoke:families access slips for parents
     npm run smoke:push     announcements and what a notification may say
     npm run smoke:platform the Midway console, and who cannot reach it
+    npm run smoke:grading  changing how a school makes a mark
     npm run smoke:api      mobile API and the advisor
     npm run smoke:setup    onboarding a school from nothing
     npm run smoke:reports  report cards and print output

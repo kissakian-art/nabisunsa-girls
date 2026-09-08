@@ -202,6 +202,7 @@ describe('rankResults', () => {
     studentId,
     subjectId: 1,
     caScore: null,
+    caOutOf: 100,
     eotScore: null,
     finalScore,
     grade: null,
@@ -252,5 +253,131 @@ describe('rankResults', () => {
 
   it('copes with an empty group', () => {
     expect(rankResults([])).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------
+// How a school arrives at the formative mark
+// ---------------------------------------------------------------------
+
+describe('a school that enters the formative mark rather than computing it', () => {
+  // Nabisunsa's own configuration, from the report form.
+  const nabisunsa: GradingConfig = {
+    caWeight: 20,
+    eotWeight: 80,
+    caBestOf: 3,
+    formativeSource: 'entered',
+    missingExamRule: 'zero',
+    scale: [
+      { grade: 'A', minScore: 80 },
+      { grade: 'B', minScore: 70 },
+      { grade: 'C', minScore: 60 },
+      { grade: 'D', minScore: 50 },
+      { grade: 'E', minScore: 0 },
+    ],
+  };
+
+  /** Kemigisa Leona Theresa, S1 Central, Term 1 2026 — rows off the report. */
+  const row = (formative: number, examOutOf100: number | null) =>
+    computeSubjectResult(
+      { studentId: 1, subjectId: 1, coursework: [formative], endOfTerm: examOutOf100 },
+      nabisunsa,
+    );
+
+  it('adds the typed mark to the weighted exam, as the report does', () => {
+    // Chemistry: 14 + 61 = 75, B. The exam column on the report is already
+    // weighted, so 61 out of 80 is 76.25 out of 100.
+    const chemistry = row(14, 76.25);
+    expect(chemistry.finalScore).toBe(75);
+    expect(chemistry.grade).toBe('B');
+  });
+
+  it('reports the formative mark in the unit it was typed in', () => {
+    // 14 out of 20, not 14 out of 100 — otherwise a report card showing
+    // "14" beside a final of 75 is simply a lie about what was entered.
+    const result = row(14, 76.25);
+    expect(result.caScore).toBe(14);
+    expect(result.caOutOf).toBe(20);
+  });
+
+  it('never applies best-of-N to a mark the school decided', () => {
+    // caBestOf is 3 and stays set, because the same school may switch back.
+    // An entered mark is one number, so there is nothing to choose between:
+    // taking "the best" of one entry per subject must change nothing.
+    expect(row(14, 76.25).finalScore).toBe(75);
+  });
+
+  it('scores an unsat paper as nothing when that is the school rule', () => {
+    // French on the report: formative 11, no exam, total 11, grade E.
+    const french = row(11, null);
+    expect(french.finalScore).toBe(11);
+    expect(french.grade).toBe('E');
+    expect(french.incomplete).toBeNull();
+  });
+
+  it('still refuses to invent a mark when nothing was recorded at all', () => {
+    const nothing = computeSubjectResult(
+      { studentId: 1, subjectId: 1, coursework: [], endOfTerm: null },
+      nabisunsa,
+    );
+    expect(nothing.finalScore).toBeNull();
+    expect(nothing.incomplete).toBe('no-scores-at-all');
+  });
+
+  it('lets the exam carry the result when no formative mark was typed', () => {
+    // The office has not reached that sheet yet. Weighting a zero it never
+    // earned would misreport the student.
+    const result = row(NaN as unknown as number, 80);
+    expect(result.caScore).toBeNull();
+    expect(result.finalScore).toBe(80);
+  });
+});
+
+describe('a school that leaves an unsat paper incomplete', () => {
+  const cautious: GradingConfig = {
+    caWeight: 20,
+    eotWeight: 80,
+    formativeSource: 'entered',
+    missingExamRule: 'excluded',
+    scale: [{ grade: 'E', minScore: 0 }],
+  };
+
+  it('publishes no final mark until the paper is sat', () => {
+    const result = computeSubjectResult(
+      { studentId: 1, subjectId: 1, coursework: [11], endOfTerm: null },
+      cautious,
+    );
+    expect(result.finalScore).toBeNull();
+    expect(result.incomplete).toBe('no-exam-score');
+  });
+});
+
+describe('the default configuration is unchanged', () => {
+  // Every school already using the system must compute exactly as before.
+  const before: GradingConfig = {
+    caWeight: 20,
+    eotWeight: 80,
+    caBestOf: 3,
+    scale: [{ grade: 'A', minScore: 80 }, { grade: 'F', minScore: 0 }],
+  };
+
+  it('averages coursework out of 100 and weights it', () => {
+    const result = computeSubjectResult(
+      { studentId: 1, subjectId: 1, coursework: [60, 70, 80, 20], endOfTerm: 90 },
+      before,
+    );
+    // Best 3 of [60,70,80,20] = 70; 70*0.2 + 90*0.8 = 86.
+    expect(result.caScore).toBe(70);
+    expect(result.caOutOf).toBe(100);
+    expect(result.finalScore).toBe(86);
+  });
+
+  it('still leaves a missing exam incomplete without being told to', () => {
+    const result = computeSubjectResult(
+      { studentId: 1, subjectId: 1, coursework: [60], endOfTerm: null },
+      before,
+    );
+    expect(result.finalScore).toBeNull();
+    expect(result.incomplete).toBe('no-exam-score');
   });
 });

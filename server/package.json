@@ -16,7 +16,8 @@
     "test:db": "jest server/db --forceExit",
     "smoke:app": "node scripts/app-smoke.js",
     "smoke:push": "node scripts/push-smoke.js",
-    "smoke:platform": "node scripts/platform-smoke.js"
+    "smoke:platform": "node scripts/platform-smoke.js",
+    "smoke:grading": "node scripts/grading-smoke.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

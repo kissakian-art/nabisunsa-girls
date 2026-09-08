@@ -34,6 +34,8 @@ interface ConfigRow extends RowDataPacket {
   ca_weight: number;
   eot_weight: number;
   ca_best_of: number | null;
+  formative_source: 'computed' | 'entered';
+  missing_exam_rule: 'excluded' | 'zero';
 }
 
 interface ScaleRow extends RowDataPacket, GradingScaleEntry {}
@@ -54,6 +56,8 @@ export async function loadGradingConfig(db: TenantDb): Promise<GradingConfig> {
     caWeight: Number(config.ca_weight),
     eotWeight: Number(config.eot_weight),
     caBestOf: config.ca_best_of == null ? null : Number(config.ca_best_of),
+    formativeSource: config.formative_source ?? 'computed',
+    missingExamRule: config.missing_exam_rule ?? 'excluded',
     scale: scale.map((row) => ({
       grade: row.grade,
       minScore: Number(row.minScore),

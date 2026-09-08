@@ -8,6 +8,7 @@ import {
   importStudents, parseStudentList, SetupError,
 } from '../../lib/setup';
 import { issueInvites, resetFamilyAccess, type IssuedSlip } from '../../lib/families';
+import { recomputeTermResults } from '../../lib/results';
 import { currentTerm } from '../../lib/marksheets';
 
 /** Setup is administration: office staff enter marks, they do not configure. */
@@ -197,4 +198,81 @@ export async function resetFamilyAction(
   } catch (error) {
     return fail(error);
   }
+}
+
+// ---------------------------------------------------------------------
+// Grading
+// ---------------------------------------------------------------------
+
+/**
+ * The rules that turn coursework and an exam into one mark.
+ *
+ * Saving recomputes the current term, because a weight or a rule that
+ * changed without the results following it would leave every report card in
+ * the school quietly disagreeing with the settings that produced it.
+ *
+ * Only released marks are recomputed — `recomputeTermResults` reads nothing
+ * else — so this cannot push an unreleased mark to a parent.
+ */
+export interface GradingActionResult {
+  ok?: string;
+  error?: string;
+}
+
+export async function saveGradingAction(
+  _prev: unknown,
+  formData: FormData,
+): Promise<GradingActionResult> {
+  try {
+    const { db } = requireAdmin();
+
+    const caWeight = Number(formData.get('caWeight'));
+    if (!Number.isInteger(caWeight) || caWeight < 0 || caWeight > 100) {
+      return { error: 'The coursework weight must be a whole number between 0 and 100.' };
+    }
+
+    const source = String(formData.get('formativeSource'));
+    if (source !== 'computed' && source !== 'entered') {
+      return { error: 'Choose where the coursework mark comes from.' };
+    }
+
+    const rule = String(formData.get('missingExamRule'));
+    if (rule !== 'excluded' && rule !== 'zero') {
+      return { error: 'Choose what a missing exam means.' };
+    }
+
+    const bestOfRaw = String(formData.get('caBestOf') ?? '').trim();
+    const bestOf = bestOfRaw === '' ? null : Number(bestOfRaw);
+    if (bestOf != null && (!Number.isInteger(bestOf) || bestOf < 1)) {
+      return { error: 'Count only the best: leave it empty, or give a whole number.' };
+    }
+
+    // Raw rather than db.update: this table holds one row per school, keyed
+    // by school_id and nothing else, so there is no other column to put in a
+    // where clause — and db.update rightly refuses an unqualified one.
+    await db.raw(
+      `UPDATE school_grading_config
+          SET ca_weight = ?, eot_weight = ?, ca_best_of = ?,
+              formative_source = ?, missing_exam_rule = ?
+        WHERE school_id = :schoolId`,
+      [
+        caWeight,
+        100 - caWeight,
+        // Best-of-N means nothing for a mark the school types in, and a
+        // stale value left visible invites someone to trust it.
+        source === 'entered' ? null : bestOf,
+        source,
+        rule,
+      ],
+    );
+
+    const term = await currentTerm(db);
+    if (term) await recomputeTermResults(db, term.id);
+  } catch (error) {
+    return fail(error);
+  }
+
+  revalidatePath('/setup/grading');
+  revalidatePath('/reports');
+  return { ok: 'Saved. Released results for this term have been recomputed.' };
 }
